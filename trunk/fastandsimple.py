@@ -24,7 +24,7 @@ class FastAndSimple:
         for v in self.x:
             v.graphics.x = float(self.x[v])
         self.g.write_gml(output_file)
-        
+        self.write_layers()
     def preprocessing(self):
         h = len(self.g.layers)
         for i in xrange(1, h-2): #i=2 to h-2
@@ -103,7 +103,13 @@ class FastAndSimple:
             if self.shift[self.sink[self.root[v]]] < float("infinity"):
                 self.x[v] = self.x[v] + self.shift[self.sink[self.root[v]]]
         
-        
+    def write_layers(self):
+        f = open("layers.txt", "w")
+        l = len(self.g.nodes)
+        f.write("%d\n" % l)
+        f.write(" ".join([node.layer for node in self.g.nodes]))
+        f.close()
+            
 if __name__ == "__main__":
     if len(sys.argv) > 2:
         fs = FastAndSimple(sys.argv[1], sys.argv[2])
