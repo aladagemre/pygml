@@ -1,0 +1,9 @@
+2009-10-18  Ahmet Emre Aladağ	<mail@mail.com>
+
+	* r1
+	* First commit
+	* pygml.py contains essential graph library
+	* fastandsimple.py contains Object oriented code for horizontal coordinate
+	assignment
+	* fast-old.py contains procedural code for horizontal coordinate
+	assignment
