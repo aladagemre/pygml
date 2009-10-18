@@ -8,16 +8,17 @@ class FastAndSimple:
         self.shift = {}
         self.x = {}
         self.align={}
-        self.minimum_distance = minimum_distance
+        self.minimum_distance = int(minimum_distance)
         self.g = Graph(input_file)
         
-        """self.preprocessing()
+        self.preprocessing()
+        
         for edge in self.g.edges:
             if edge.marked:
                 edge.graphics.fill = "#FF0000"
                 #print "(%s, %s) - %s" % (edge.source, edge.target,  edge.marked)
         self.g.write_gml("pre_" + output_file)
-        """
+        
         self.vertical_alignment()
         self.horizontal_compaction()
         
@@ -25,21 +26,23 @@ class FastAndSimple:
             v.graphics.x = float(self.x[v])
         self.g.write_gml(output_file)
         self.write_layers()
+        
     def preprocessing(self):
+        """Marks the edges with type 1 crossing."""
         h = len(self.g.layers)
         for i in xrange(1, h-2): #i=2 to h-2
             k0 = 0
-            l = 0 # OR 1 ???
-            for l1 in range(0, self.g.layer_num_elements(i)+1):
-                if l1 == self.g.layer_num_elements(i) or self.g.is_end_incident(self.g.get_node(i, l1)):
-                    k1 = self.g.layer_num_elements(i-1)
-                    if self.g.is_end_incident(self.g.get_node(i, l1-1)):
-                        k1 =  self.g.get_node(i, l1).upper_neighbors()[0].position
+            l = 0
+            for l1 in range(0, self.g.layer_num_elements(i+1)):
+                if l1 == self.g.layer_num_elements(i+1) or self.g.is_end_incident(self.g.get_node(i+1, l1)): #incident means target v(i+1, l1) should be real and source is virtual?
+                    k1 = self.g.layer_num_elements(i)
+                    if self.g.is_end_incident(self.g.get_node(i+1, l1)):
+                        k1 = self.g.get_node(i+1, l1).upper_neighbors()[0].position
                     while l < l1:
                         
-                        for un in self.g.get_node(i, l).upper_neighbors():
+                        for un in self.g.get_node(i+1, l).upper_neighbors():
                             if un.position < k0 or un.position > k1:
-                                self.g.mark_segment(un, self.g.get_node(i, l))
+                                self.g.mark_segment(un, self.g.get_node(i+1, l))
                         l += 1
                     k0 = k1
     
@@ -80,7 +83,7 @@ class FastAndSimple:
                     self.place_block(u)
                     if self.sink[v] == v:
                         self.sink[v] = self.sink[u]
-                    if self.sink[v] != self.sink[u]:
+                    if self.sink[v] != self.sink[u]:                                               
                         self.shift[self.sink[u]] = min(self.shift[self.sink[u]], self.x[v] - self.x[u] - self.minimum_distance)
                     else:
                         self.x[v]  = max(self.x[v], self.x[u] + self.minimum_distance)
