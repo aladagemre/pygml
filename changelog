@@ -1,5 +1,10 @@
 2009-10-18  Ahmet Emre Aladağ  <mail@mail.com>
 
+	* r5
+	* Bugfix: join requires string but found int (layer #)
+
+2009-10-18  Ahmet Emre Aladağ  <mail@mail.com>
+
 	* r4
 	* Added write_layers method to fastandsimple.py (writes # of nodes in the
 	graph and layer # of each node.
