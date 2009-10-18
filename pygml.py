@@ -394,7 +394,15 @@ class Graph:
             if edge.u == u and edge.v == v:
                 return edge
         return None
-
+    
+    def get_double_edge(self, u, v):
+        """Returns the edge with the given or reverse source and target nodes."""
+        a = self.get_edge(u,v)
+        if a:
+            return a
+        else:
+            return self.get_edge(v,u)
+        
     def get_edge_by_id(self, id):
         """Returns the edge with the given id."""
         for edge in self.edges:

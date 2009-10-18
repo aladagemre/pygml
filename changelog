@@ -1,5 +1,11 @@
 2009-10-18  Ahmet Emre Aladağ  <mail@mail.com>
 
+	* r7
+	* Fixed index problems in preprocessing step.
+	* Added get_double_edge method.
+
+2009-10-18  Ahmet Emre Aladağ  <mail@mail.com>
+
 	* r6
 	* Added minimum_distance into command line arguments
 
