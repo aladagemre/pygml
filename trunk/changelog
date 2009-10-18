@@ -1,6 +1,12 @@
-2009-10-18  Ahmet Emre Aladağ	<mail@mail.com>
+2009-10-18  Ahmet Emre Aladağ  <mail@mail.com>
+	
+	* r3
+	* Removed some debugging code.
+	* Added usage explanation
 
-	* r1
+2009-10-18  Ahmet Emre Aladağ  <mail@mail.com>
+
+	* r2
 	* First commit
 	* pygml.py contains essential graph library
 	* fastandsimple.py contains Object oriented code for horizontal coordinate
