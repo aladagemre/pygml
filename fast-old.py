@@ -91,8 +91,6 @@ for edge in m.edges:
     print edge.marked
     
 m, align, root = vertical_alignment(m)
-for key in align:
-    print "%s - %s" % (key.id, align[key].id)
 horizontal_compaction()
 for v in x:
     v.graphics.x = float(x[v])

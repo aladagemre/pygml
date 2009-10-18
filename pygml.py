@@ -426,7 +426,3 @@ class Graph:
     def mark_segment(self, u, v):
         e = self.get_edge(u,v)
         e.marked = True
-
-#m = Graph("graphs/graphwithdummy_gml7.gml")
-#m = Graph("/home/emre/Download/graph_test1")
-

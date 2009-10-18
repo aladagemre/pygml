@@ -11,18 +11,14 @@ class FastAndSimple:
         self.minimum_distance = 75
         self.g = Graph(input_file)
         
-        self.preprocessing()
+        """self.preprocessing()
         for edge in self.g.edges:
             if edge.marked:
                 edge.graphics.fill = "#FF0000"
                 #print "(%s, %s) - %s" % (edge.source, edge.target,  edge.marked)
         self.g.write_gml("pre_" + output_file)
+        """
         self.vertical_alignment()
-        print self.sink
-        print self.shift
-        print self.x
-        for key in self.align:
-            print "%s - %s" % (key.id, self.align[key].id)
         self.horizontal_compaction()
         
         for v in self.x:
@@ -113,3 +109,4 @@ if __name__ == "__main__":
         fs = FastAndSimple(sys.argv[1], sys.argv[2])
     else:
         print "Insufficient parameters"
+        print "Usage: python %s <input file> <output file>" % sys.argv[0]
