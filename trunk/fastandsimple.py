@@ -107,7 +107,7 @@ class FastAndSimple:
         f = open("layers.txt", "w")
         l = len(self.g.nodes)
         f.write("%d\n" % l)
-        f.write(" ".join([node.layer for node in self.g.nodes]))
+        f.write(" ".join([str(node.layer) for node in self.g.nodes]))
         f.close()
             
 if __name__ == "__main__":
