@@ -3,12 +3,12 @@ from math import ceil, floor
 import sys
 
 class FastAndSimple:
-    def __init__(self, input_file, output_file):
+    def __init__(self, input_file, output_file, minimum_distance):
         self.sink = {}
         self.shift = {}
         self.x = {}
         self.align={}
-        self.minimum_distance = 75
+        self.minimum_distance = minimum_distance
         self.g = Graph(input_file)
         
         """self.preprocessing()
@@ -111,8 +111,8 @@ class FastAndSimple:
         f.close()
             
 if __name__ == "__main__":
-    if len(sys.argv) > 2:
-        fs = FastAndSimple(sys.argv[1], sys.argv[2])
+    if len(sys.argv) > 3:
+        fs = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3])
     else:
         print "Insufficient parameters"
-        print "Usage: python %s <input file> <output file>" % sys.argv[0]
+        print "Usage: python %s <input file> <output file> <minimum distance>" % sys.argv[0]
