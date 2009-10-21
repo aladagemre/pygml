@@ -347,6 +347,11 @@ class Graph:
                     node.pred = self.layers[layer][node.position - 1]
                 else:
                     node.pred = None
+                    
+                if node.position < len(self.layers[layer])-1:
+                    node.succ = self.layers[layer][node.position + 1]
+                else:
+                    node.succ = None
 
     def find_virtual_vertices(self, color='#FF8000'):
         """Determines the virtual vertices. Sets boolean "virtual" attribute for node,
@@ -418,10 +423,20 @@ class Graph:
     def is_end_incident(self, node):
         """Checks if the node is on the last point of the long edge.
         i.e. has incoming edge from a virtual node but itself is real."""
-        for edge in node.incoming_edges:
+        """for edge in node.incoming_edges:
             if edge.u.virtual and not edge.v.virtual:
                 return True
         return False
+        """
+        if node.virtual:
+            if len(node.incoming_edges) > 1:
+                print "len(inc_edge) = %d!!!" % len(node.incoming_edges)
+            
+            e = node.incoming_edges[0]
+            
+            return e.u.virtual
+        else:
+            return False
 
     def is_start_incident(self, node):
         """Checks if the node is on the starting point of the long edge.
@@ -432,5 +447,31 @@ class Graph:
         return False
 
     def mark_segment(self, u, v):
+        """Marks the edge as type 1 crossing."""
         e = self.get_edge(u,v)
         e.marked = True
+    def min_x(self):
+        """Returns the minimum x value among the nodes of the graph."""
+        min_x = float("infinity")
+        for node in self.nodes:
+            x = node.graphics.x
+            if x < min_x:
+                min_x = x
+        return min_x
+                
+    def max_x(self):
+        """Returns the maximum x value among the nodes of the graph."""
+        max_x = float("-infinity")
+        
+        for node in self.nodes:
+            x = node.graphics.x
+            if x > max_x:
+                max_x = x
+                
+        return max_x
+                                
+            
+    def get_width(self):
+        """Returns the width of the graph."""
+        return self.max_x() - self.min_x()
+    

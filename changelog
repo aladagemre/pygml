@@ -1,3 +1,12 @@
+2009-10-21  Ahmet Emre Aladağ  <mail@mail.com>
+
+	* r8
+	* Added symmetric vertical alignment codes.
+	* Added combining 4 candidates option
+	* Command line arguments have changed.
+	* Type 2 crossing check method added.
+	* Some extra debug and adjustment methods added.
+
 2009-10-18  Ahmet Emre Aladağ  <mail@mail.com>
 
 	* r7
