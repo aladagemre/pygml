@@ -82,7 +82,11 @@ class FastAndSimple:
             for node in self.g.layers[layer]:
                 edges = node.outgoing_edges
                 for edge in edges:
+                    if not "parameter" in edge.__dict__:
+                        edge.parameter = 2.0
                     layer_sum += float(edge.parameter)
+                    
+                        
             layer_sums[layer] = layer_sum
             total_sum += layer_sum
 
@@ -162,13 +166,15 @@ class FastAndSimple:
 
         """
         # Print the nodes that are overlapping
+        #print "Checking overlapping nodes."
         for layer in self.g.layers:
-            print "Layer %d" % layer
+            #print "Layer %d" % layer
+            #print_list(self.g.layers[layer])
             for u in self.g.layers[layer]:                
                 for v in self.g.layers[layer]:
                     if u!=v and u.graphics.x == v.graphics.x and u.graphics.y == v.graphics.y:
-                        print "%s (%0.0f, %0.0f) , %s (%0.0f, %0.0f)\t" % (u.id, u.graphics.x, u.graphics.y, v.id, v.graphics.x, v.graphics.y),
-                        print_list(self.g.layers[u.layer])
+                        print "%s (%0.0f, %0.0f) , %s (%0.0f, %0.0f)" % (u.id, u.graphics.x, u.graphics.y, v.id, v.graphics.x, v.graphics.y)
+                        
             
         
         """for layer in self.g.layers:
@@ -221,22 +227,41 @@ class FastAndSimple:
             self.align[node] = node
         
         for layer in range(len(self.g.layers)):
-            r = 0
+            #print "-"*30
+            #print "Layer %d" % layer
+            r = -1
             for v in self.g.layers[layer]:
+                #print
+                #print "Node: %d" % v.id
                 neighbors = v.upper_neighbors()
-                d = len(neighbors)
-    
+                d = float(len(neighbors))
+                #print "Neighbors:", 
+                #print_list(neighbors)
+                
                 if d > 0:
                     for m in ( floor((d+1)/2), ceil((d+1)/2) ):
                         m = int(m) - 1
+                        #print "Checking upper neighbor %d" % neighbors[m].id
                         
                         if (self.align[v] == v):
-                            
+                            #print "r=%d, pos[%d]=%d" % (r, neighbors[m].id, neighbors[m].position)
                             if not self.g.get_edge(neighbors[m], v).marked and r < neighbors[m].position:
+                                #print "Aligning %d" % v.id
                                 self.align[neighbors[m]] = v
+                                #print "self.align[%d] = %d" % (neighbors[m].id,v.id)
                                 self.root[v] = self.root[neighbors[m]]
+                                #print "self.root[%d] = self.root[%d] = %d" % (v.id, neighbors[m].id, self.root[neighbors[m]].id)
                                 self.align[v] = self.root[v]
+                                #print "self.align[%d] = self.root[%d] = %d" % (v.id, v.id, self.root[v].id)
                                 r = neighbors[m].position
+            #print "-"*30
+            #print
+        #print "Roots:"
+        #for v in self.root:
+            #print "%d - %d" % (v.id, self.root[v].id)
+        #print "Aligns:"
+        #for v in self.align:
+            #print "%d - %d" % (v.id, self.align[v].id)
     def vertical_alignment_up_right(self):
         self.root = {}
         self.align = {}
@@ -246,9 +271,12 @@ class FastAndSimple:
         
         for layer in range(len(self.g.layers)):
             r = len(self.g.layers[layer]) # Changed 0 to last index for right
+            #print "r=%d" % r
             for v in self.g.layers[layer][::-1]: # Changed order for right
+                #print "Node: %d" % v.id
                 neighbors = v.upper_neighbors()
-                d = len(neighbors)
+                #neighbors.reverse()
+                d = float(len(neighbors))
                 if d > 0:
                     for m in ( ceil((d+1)/2), floor((d+1)/2) ): #changed order for right
                         m = int(m) - 1
@@ -271,15 +299,19 @@ class FastAndSimple:
         for layer in range(len(self.g.layers))[::-1]:
             r = len(self.g.layers[layer]) # Changed 0 to last index for right
             for v in self.g.layers[layer][::-1]: # Changed order for right
+                #print "Node %d" % v.id
                 neighbors = v.lower_neighbors()
-                d = len(neighbors)
+                neighbors.reverse()
+                #print_list(neighbors)
+                d = float(len(neighbors))
                 if d > 0:
-                    for m in ( ceil((d+1)/2), floor((d+1)/2) ): #changed order for right
+                    for m in ( floor((d+1)/2), ceil((d+1)/2) ): #changed order for right
                         m = int(m) - 1
                         
                         if (self.align[v] == v):
                             
                             if not self.g.get_edge(v, neighbors[m]).marked and r > neighbors[m].position: # Changed < to > for right
+                                #print "Checking neighbor %d" % neighbors[m].id
                                 self.align[neighbors[m]] = v
                                 self.root[v] = self.root[neighbors[m]]
                                 self.align[v] = self.root[v]
@@ -294,10 +326,10 @@ class FastAndSimple:
             self.align[node] = node
         
         for layer in range(len(self.g.layers))[::-1]:
-            r = 0
+            r = -1
             for v in self.g.layers[layer]:
                 neighbors = v.lower_neighbors()
-                d = len(neighbors)
+                d = float(len(neighbors))
     
                 if d > 0:
                     for m in ( floor((d+1)/2), ceil((d+1)/2) ):
@@ -326,7 +358,7 @@ class FastAndSimple:
                         self.shift[self.sink[u]] = min(self.shift[self.sink[u]], self.x[v] - self.x[u] - self.minimum_distance)
                     else:
                         self.x[v]  = max(self.x[v], self.x[u] + self.minimum_distance)
-                
+                        #print "x[%d]=%f\tLayer:%d" % (v.id, self.x[v], v.layer)
                 w = self.align[w]
     def place_block_right(self, v):
         if not self.x.get(v):
@@ -359,21 +391,23 @@ class FastAndSimple:
             for v in self.g.layers[layer]:
                 if self.root[v] == v:
                     self.place_block_left(v)
+                
         # absolute coordinates
         #for v in self.g.nodes:
         for layer in self.g.layers:
             for v in self.g.layers[layer]:
                 self.x[v] = self.x[self.root[v]]
                 if self.shift[self.sink[self.root[v]]] < float("infinity"):
-                    if v.id in (19,9):
+                    """if v.id in (19,9):
                         print "Shifting ", v.id
                         print "x[%d] = %d" % (v.id, self.x[v])
-                        print "self.root.id = %d\nself.sink[root] = %d\t self.shift[sink[root]] = %d" % (self.root[v].id, self.sink[self.root[v]].id, self.shift[self.sink[self.root[v]]] )
+                        print "self.root.id = %d\nself.sink[root] = %d\t self.shift[sink[root]] = %d" % (self.root[v].id, self.sink[self.root[v]].id, self.shift[self.sink[self.root[v]]] )"""
                     self.x[v] = self.x[v] + self.shift[self.sink[self.root[v]]]
-                    if v.id in (19,9):
+                    """if v.id in (19,9):
                         print "Shifted ", v.id
                         print "x[%d] = %d" % (v.id, self.x[v])
-            
+                    """
+                    
         
             
     def horizontal_compaction_right(self):
@@ -391,7 +425,7 @@ class FastAndSimple:
             if self.shift[self.sink[self.root[v]]] < float("infinity"):
                 #print "Shifting ", v.id
                 #print "x[%d] = %d" % (v.id, self.x[v])
-                self.x[v] = self.x[v] + self.shift[self.sink[self.root[v]]]  
+                self.x[v] = self.x[v] + self.shift[self.sink[self.root[v]]]
             
     def write_layers(self):
         f = open("layers.txt", "w")
@@ -409,40 +443,53 @@ class Aligner:
         x_ur = {}
         x_dr = {}
         
+        names = ["ul","ur","dl","dr"]
         # Find the reference graph.
         min_width = float("infinity")
         for graph in graphs:
             w = graph.get_width()
+            #print "Width of %s : %f" % (names[graphs.index(graph)], w)
             if  w < min_width:
+                min_width = w
                 reference_graph = graph
-    
+        #print "Minimum width :", names[graphs.index(reference_graph)], min_width
+        
         (ul, ur, dl, dr) = graphs
         
         min_ref = reference_graph.min_x()        
-        max_ref = reference_graph.max_x()        
+        max_ref = reference_graph.max_x()
+        #print "min_ref", min_ref
+        #print "max_ref", max_ref
 
         # Shift left
         min_ul = ul.min_x()
         min_dl = dl.min_x()
-                
+        #print "min_ul = ",min_ul
+        #print "min_dl = ",min_dl
     
         difference = min_ul - min_ref
+        #print "difference = ",difference
         for node in ul.nodes:
             if reference_graph != ul:
                 node.graphics.x -= difference
             x_ul[node.id] = node.graphics.x
             
+            
     
         difference = min_dl - min_ref
+        #print "min_dl - min_ref = %d - %d = %d" % (min_dl, min_ref, difference)
         for node in dl.nodes:
             if reference_graph != dl:
+                #if node.id == 10: print "Before: ", node.graphics.x
                 node.graphics.x -= difference
+                #if node.id == 10: print "After: ", node.graphics.x
             x_dl[node.id] = node.graphics.x
         # Shift right
         
         max_ur = ur.max_x()
         max_dr = dr.max_x()
-        
+        #print "max_ur = ", max_ur
+        #print "max_dr = ", max_dr
     
         difference = max_ur - max_ref
         for node in ur.nodes:
@@ -460,9 +507,14 @@ class Aligner:
         # Average of median
         for node_id in x_ul.keys(): # Not particularly x_ul. As ids are all the same.
             x_list = [ x_ul[node_id], x_ur[node_id], x_dl[node_id], x_dr[node_id] ]
+            #if node_id == 10:
+                #print x_list            
             x_list.sort()
+            
             average = (x_list[1] + x_list[2])/2
             reference_graph.get_node_by_id(node_id).graphics.x = average
+            #if node_id == 10:
+                #print "10 - ", average
         
         
         self.result = reference_graph
@@ -474,10 +526,19 @@ class Aligner:
 if __name__ == "__main__":
     if len(sys.argv) > 4:
         if sys.argv[4] == "combined":
+            print "Up Left"
             ul = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "up", "left")
+            print
+            print "Up Right"
             ur = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "up", "right")
+            print
+            print "Down Left"
             dl = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "down", "left")
+            print
+            print "Down Right"
             dr = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "down", "right")
+            
+            #print "x(10)=", dl.g.get_node_by_id(10).graphics.x
             
             aligner = Aligner((ul.g, ur.g, dl.g, dr.g))
             result = aligner.get_result()
@@ -489,8 +550,8 @@ if __name__ == "__main__":
             #fs.post_adjustments()
             fs.g.write_gml(sys.argv[2])
         
-        import os
-        os.system("./graphwin %s &" % sys.argv[2])
+        #import os
+        #os.system("./graphwin %s &" % sys.argv[2])
     else:
         print "Insufficient parameters"
         print "Usage: python %s <input file> <output file> <minimum distance> <combined/up/down> [left/right]" % sys.argv[0]
