@@ -87,7 +87,8 @@ class Edge(BaseClass):
         fields  = self.__dict__.copy()
         output  = self.print_header("edge", fields)
         output += self.print_subsection("graphics", self.graphics.__dict__)
-        output += self.print_subsection("LabelGraphics", self.LabelGraphics.__dict__)
+        if "LabelGraphics" in self.__dict__:
+            output += self.print_subsection("LabelGraphics", self.LabelGraphics.__dict__)
         output += self.print_footer()
         return output
 
@@ -333,7 +334,7 @@ class Graph:
         Assigns the position attribute to each node."""
 
         for node in self.nodes:
-            node.layer = int(node.graphics.y / 100)
+            node.layer = int(round(node.graphics.y / 100))
             if not self.layers.get(node.layer):
                 self.layers[node.layer] = []
             self.layers[node.layer].append(node)
@@ -376,7 +377,12 @@ class Graph:
 
             edge.u.outgoing_edges.append(edge)
             edge.v.incoming_edges.append(edge)
-
+        for node in self.nodes:
+            node.incoming_edges.sort(lambda e1,e2: cmp(float(e1.u.graphics.x), int(e2.u.graphics.x)))
+            node.outgoing_edges.sort(lambda e1,e2: cmp(float(e1.v.graphics.x), int(e2.v.graphics.x)))
+            
+            #node.incoming_edges.sort(lambda u,v: cmp(float(u.graphics.x), float(v.graphics.x)))
+            #node.outgoing_edges.sort(lambda u,v: cmp(float(u.graphics.x), float(v.graphics.x)))
     # Service methods
     def get_node(self, layer, position):
         """Returns the requested node with layer and position number given.
