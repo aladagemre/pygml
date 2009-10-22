@@ -401,9 +401,16 @@ class Graph:
 
     def get_edge(self, u, v):
         """Returns the edge with the given source and target nodes."""
-        for edge in self.edges:
-            if edge.u == u and edge.v == v:
+        for edge in u.outgoing_edges:
+            if edge.v == v:
                 return edge
+        
+        """
+        oe = u.outgoing_edges
+        ie = v.incoming_edges
+        result = set(oe).intersection(set(ie))
+        if len(result) > 0:
+            return list(result)[0]"""
         return None
     
     def get_double_edge(self, u, v):

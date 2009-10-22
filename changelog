@@ -1,3 +1,10 @@
+2009-10-23  Ahmet Emre Aladağ  <mail@mail.com>
+
+	* r12
+	* Improved get_edge method.
+	* Added layers.txt / positions.txt generation / choice support
+	* Disabled post adjustments for now, meaning overlaps can happen
+
 2009-10-22  Ahmet Emre Aladağ  <mail@mail.com>
 
 	* r11
