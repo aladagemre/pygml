@@ -228,41 +228,21 @@ class FastAndSimple:
             self.align[node] = node
         
         for layer in range(len(self.g.layers)):
-            #print "-"*30
-            #print "Layer %d" % layer
             r = -1
             for v in self.g.layers[layer]:
-                #print
-                #print "Node: %d" % v.id
                 neighbors = v.upper_neighbors()
                 d = float(len(neighbors))
-                #print "Neighbors:", 
-                #print_list(neighbors)
                 
                 if d > 0:
                     for m in ( floor((d+1)/2), ceil((d+1)/2) ):
                         m = int(m) - 1
-                        #print "Checking upper neighbor %d" % neighbors[m].id
-                        
                         if (self.align[v] == v):
-                            #print "r=%d, pos[%d]=%d" % (r, neighbors[m].id, neighbors[m].position)
                             if not self.g.get_edge(neighbors[m], v).marked and r < neighbors[m].position:
-                                #print "Aligning %d" % v.id
                                 self.align[neighbors[m]] = v
-                                #print "self.align[%d] = %d" % (neighbors[m].id,v.id)
-                                self.root[v] = self.root[neighbors[m]]
-                                #print "self.root[%d] = self.root[%d] = %d" % (v.id, neighbors[m].id, self.root[neighbors[m]].id)
+                                self.root[v] = self.root[neighbors[m]]    
                                 self.align[v] = self.root[v]
-                                #print "self.align[%d] = self.root[%d] = %d" % (v.id, v.id, self.root[v].id)
                                 r = neighbors[m].position
-            #print "-"*30
-            #print
-        #print "Roots:"
-        #for v in self.root:
-            #print "%d - %d" % (v.id, self.root[v].id)
-        #print "Aligns:"
-        #for v in self.align:
-            #print "%d - %d" % (v.id, self.align[v].id)
+                
     def vertical_alignment_up_right(self):
         self.root = {}
         self.align = {}
@@ -272,11 +252,9 @@ class FastAndSimple:
         
         for layer in range(len(self.g.layers)):
             r = len(self.g.layers[layer]) # Changed 0 to last index for right
-            #print "r=%d" % r
+            
             for v in self.g.layers[layer][::-1]: # Changed order for right
-                #print "Node: %d" % v.id
                 neighbors = v.upper_neighbors()
-                #neighbors.reverse()
                 d = float(len(neighbors))
                 if d > 0:
                     for m in ( ceil((d+1)/2), floor((d+1)/2) ): #changed order for right
@@ -300,19 +278,15 @@ class FastAndSimple:
         for layer in range(len(self.g.layers))[::-1]:
             r = len(self.g.layers[layer]) # Changed 0 to last index for right
             for v in self.g.layers[layer][::-1]: # Changed order for right
-                #print "Node %d" % v.id
                 neighbors = v.lower_neighbors()
                 neighbors.reverse()
-                #print_list(neighbors)
                 d = float(len(neighbors))
                 if d > 0:
                     for m in ( floor((d+1)/2), ceil((d+1)/2) ): #changed order for right
                         m = int(m) - 1
-                        
                         if (self.align[v] == v):
-                            
                             if not self.g.get_edge(v, neighbors[m]).marked and r > neighbors[m].position: # Changed < to > for right
-                                #print "Checking neighbor %d" % neighbors[m].id
+                
                                 self.align[neighbors[m]] = v
                                 self.root[v] = self.root[neighbors[m]]
                                 self.align[v] = self.root[v]
@@ -359,7 +333,7 @@ class FastAndSimple:
                         self.shift[self.sink[u]] = min(self.shift[self.sink[u]], self.x[v] - self.x[u] - self.minimum_distance)
                     else:
                         self.x[v]  = max(self.x[v], self.x[u] + self.minimum_distance)
-                        #print "x[%d]=%f\tLayer:%d" % (v.id, self.x[v], v.layer)
+                        
                 w = self.align[w]
     def place_block_right(self, v):
         if not self.x.get(v):
@@ -398,16 +372,8 @@ class FastAndSimple:
         for layer in self.g.layers:
             for v in self.g.layers[layer]:
                 self.x[v] = self.x[self.root[v]]
-                if self.shift[self.sink[self.root[v]]] < float("infinity"):
-                    """if v.id in (19,9):
-                        print "Shifting ", v.id
-                        print "x[%d] = %d" % (v.id, self.x[v])
-                        print "self.root.id = %d\nself.sink[root] = %d\t self.shift[sink[root]] = %d" % (self.root[v].id, self.sink[self.root[v]].id, self.shift[self.sink[self.root[v]]] )"""
-                    self.x[v] = self.x[v] + self.shift[self.sink[self.root[v]]]
-                    """if v.id in (19,9):
-                        print "Shifted ", v.id
-                        print "x[%d] = %d" % (v.id, self.x[v])
-                    """
+                if v==self.root[v] and self.shift[self.sink[v]] < float("infinity"):
+                    self.x[v] = self.x[v] + self.shift[self.sink[v]]
                     
         
             
@@ -423,10 +389,8 @@ class FastAndSimple:
         # absolute coordinates
         for v in self.g.nodes:
             self.x[v] = self.x[self.root[v]]
-            if self.shift[self.sink[self.root[v]]] < float("infinity"):
-                #print "Shifting ", v.id
-                #print "x[%d] = %d" % (v.id, self.x[v])
-                self.x[v] = self.x[v] - self.shift[self.sink[self.root[v]]]
+            if v==self.root[v] and self.shift[self.sink[v]] < float("infinity"):
+                self.x[v] = self.x[v] - self.shift[self.sink[v]]
             
     def write_layers(self):
         f = open("layers.txt", "w")
@@ -545,12 +509,11 @@ if __name__ == "__main__":
             result = aligner.get_result()
             fs = FastAndSimple(result, "output1.gml", 100, None, None)
             fs.debug()
-            #fs.post_adjustments()
+            fs.post_adjustments()
             fs.g.write_gml(sys.argv[2])
         else:
             fs = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-            fs.debug()
-            #fs.post_adjustments()
+            fs.post_adjustments()
             fs.g.write_gml(sys.argv[2])
         
         #import os
