@@ -1,5 +1,10 @@
 2009-10-22  Ahmet Emre Aladağ  <mail@mail.com>
 
+	* r11
+	* Applied the fix on the algorithm but there are still overlaps.
+
+2009-10-22  Ahmet Emre Aladağ  <mail@mail.com>
+
 	* r10
 	* Fixed mirroring problems in rightmost layouts. Now decrementing the
 	coordinates.
