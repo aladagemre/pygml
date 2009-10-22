@@ -1,10 +1,11 @@
 from pygml import *
 from math import ceil, floor
 import sys
+import cProfile
 
 class FastAndSimple:
     
-    def __init__(self, input_file, output_file, minimum_distance, vstart, hstart):
+    def __init__(self, input_file, output_file, minimum_distance, vstart, hstart, layersorpositions='layers'):
         self.sink = {}
         self.shift = {}
         self.x = {}
@@ -22,15 +23,16 @@ class FastAndSimple:
         #get_layer = lambda x: self.g.layers[x]
         #self.post_adjustments()
         #self.g.write_gml(output_file)
-        if self.detect_type2():
-            print "Because of the type 2 crossings, there might be problems."
+        #if self.detect_type2():
+        #print "Because of the type 2 crossings, there might be problems."
             
-        
+        print "Preprocessing..."
         self.preprocessing()
         # Mark type 1 crossing edges with red.
-        for edge in self.g.edges:
+        """for edge in self.g.edges:
             if edge.marked:
                 edge.graphics.fill = "#FF0000"
+        """
         
         if vstart == "up":
             if hstart == "left":
@@ -51,12 +53,16 @@ class FastAndSimple:
         for v in self.x:
             v.graphics.x = float(self.x[v])
         
-            
+        print "Weighted y coordinates..."
         self.weighted_y_coordinates(100)
-        self.debug()
+        #self.debug()
         #self.adjustments()
         #self.g.write_gml(output_file)
-        #self.write_layers()
+        if layersorpositions == 'layers':
+            self.write_layers()
+        elif layersorpositions == 'positions':
+            self.write_positions()
+            
     def detect_type2(self):
         detected = False
         for layer in self.g.layers:
@@ -103,18 +109,42 @@ class FastAndSimple:
     def post_adjustments(self):
         """Some post adjustments after balancing. (terrible)"""
         # Shifts the overlapping nodes by half of their widths.
-        """layer_overlaps = {0: 1}
+        print "Post ad"
+        layer_overlaps = {0: 1}
+        tour = 0
         while sum(layer_overlaps.values()) != 0:
             print "New tour"
+            tour += 1
+            
             for layer in self.g.layers:
                 layer_overlaps[layer] = 0
                 for u in self.g.layers[layer]:
-                    v = u.succ
-                    if v!=None and abs(u.graphics.x - v.graphics.x) < (u.graphics.w + v.graphics.w)/2 :
-                        u.graphics.x -= u.graphics.w/2
-                        v.graphics.x += v.graphics.w/2
-                        #print "Adjusting %d and %d" % (u.id, v.id)
-                        layer_overlaps[layer] = 1
+                    for v in self.g.layers[layer]:
+                        if u!=v and abs(u.graphics.x - v.graphics.x) < (u.graphics.w + v.graphics.w)/2 :
+                            if tour > 15:
+                                print u.id,":",u.graphicsx,"---",v.id,":", v.graphics.x
+                            
+                            print "Adjusting %d and %d" % (u.id, v.id)
+                            if u.position < v.position:
+                                if u.pred:
+                                    prev_x = u.pred.graphics.x
+                                else:
+                                    prev_x = u.graphics.x - self.minimum_distance
+                                if prev_x + self.minimum_distance not in [node.graphics.x for node in self.g.layers[layer]]:
+                                    u.graphics.x = prev_x + self.minimum_distance
+                                else:
+                                    u.graphics.x = prev_x + self.minimum_distance/2
+                            else:
+                                if v.pred:
+                                    prev_x = v.pred.graphics.x
+                                else:
+                                    prev_x = v.graphics.x - self.minimum_distance
+                                    
+                                if prev_x + self.minimum_distance not in [node.graphics.x for node in self.g.layers[layer]]:
+                                    v.graphics.x = prev_x + self.minimum_distance
+                                else:
+                                    v.graphics.x = prev_x + self.minimum_distance/2
+                            layer_overlaps[layer] = 1
         """                
         for node in self.g.virtual_nodes:
             node.graphics.w = 0.01
@@ -123,7 +153,7 @@ class FastAndSimple:
             for edge in self.g.edges:
                 if edge.v.virtual:
                     edge.graphics.arrow = "none"
-
+                    """
             
     def adjustments(self):
         """Some adjustments for the bug of the algorithm. Seperates overlapping nodes."""
@@ -221,6 +251,7 @@ class FastAndSimple:
                     k0 = k1
     
     def vertical_alignment_up_left(self):
+        print "Vertical Alignment Up left..."
         self.root = {}
         self.align = {}
         for node in self.g.nodes:
@@ -228,6 +259,7 @@ class FastAndSimple:
             self.align[node] = node
         
         for layer in range(len(self.g.layers)):
+            #print "Layer %d" % layer
             r = -1
             for v in self.g.layers[layer]:
                 neighbors = v.upper_neighbors()
@@ -244,6 +276,7 @@ class FastAndSimple:
                                 r = neighbors[m].position
                 
     def vertical_alignment_up_right(self):
+        print "Vertical Alignment Up Right..."
         self.root = {}
         self.align = {}
         for node in self.g.nodes:
@@ -269,6 +302,7 @@ class FastAndSimple:
                                 r = neighbors[m].position
                                 
     def vertical_alignment_down_right(self):
+        print "Vertical Alignment Down Right..."
         self.root = {}
         self.align = {}
         for node in self.g.nodes:
@@ -294,6 +328,7 @@ class FastAndSimple:
                                 
                                 
     def vertical_alignment_down_left(self):
+        print "Vertical Alignment Down left..."
         self.root = {}
         self.align = {}
         for node in self.g.nodes:
@@ -357,6 +392,7 @@ class FastAndSimple:
     
     
     def horizontal_compaction_left(self):
+        print "Horizontal Compaction left..."
         for v in self.g.nodes:
             self.sink[v] = v
             self.shift[v] = float("infinity")
@@ -378,6 +414,7 @@ class FastAndSimple:
         
             
     def horizontal_compaction_right(self):
+        print "Horizontal Compaction right..."
         for v in self.g.nodes:
             self.sink[v] = v
             self.shift[v] = float("infinity")
@@ -391,7 +428,16 @@ class FastAndSimple:
             self.x[v] = self.x[self.root[v]]
             if v==self.root[v] and self.shift[self.sink[v]] < float("infinity"):
                 self.x[v] = self.x[v] - self.shift[self.sink[v]]
-            
+    
+    def write_positions(self):
+        f = open("positions.txt", "w")
+        f.write("%d\n" % len(self.g.nodes))
+        for layer in self.g.layers:
+            this_layer = self.g.layers[layer]
+            f.write("%d " % len(this_layer) + " ".join(["%f %f" % (node.graphics.x, node.graphics.y) for node in this_layer]) + "\n")
+        f.close()
+                
+                
     def write_layers(self):
         f = open("layers.txt", "w")
         l = len(self.g.nodes)
@@ -402,6 +448,7 @@ class FastAndSimple:
 class Aligner:
     """Utilities for aligning the 4 candidate graphs."""
     def __init__(self, graphs):
+        print "Combiner..."
         # Store x values
         x_ul = {}
         x_dl = {}
@@ -487,37 +534,46 @@ class Aligner:
     def get_result(self):
         return self.result
             
+
+# -----------------------------------------
+
+
+def main():
+    if sys.argv[4] == "combined":
+        print "Up Left"
+        ul = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "up", "left", sys.argv[6])
+        print
+        print "Up Right"
+        ur = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "up", "right", sys.argv[6])
+        print
+        print "Down Left"
+        dl = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "down", "left", sys.argv[6])
+        print
+        print "Down Right"
+        dr = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "down", "right", sys.argv[6])
         
+        #print "x(10)=", dl.g.get_node_by_id(10).graphics.x
+        
+        aligner = Aligner((ul.g, ur.g, dl.g, dr.g))
+        result = aligner.get_result()
+        fs = FastAndSimple(result, sys.argv[2], 100, None, None)
+        #fs.post_adjustments()
+        #fs.debug()
+        fs.g.write_gml(sys.argv[2])
+        fs.write_layers()
+    else:
+        fs = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+        fs.post_adjustments()
+        fs.g.write_gml(sys.argv[2])
+    
+    #import os
+    #os.system("./graphwin %s &" % sys.argv[2])
+
+    
+    
 if __name__ == "__main__":
     if len(sys.argv) > 4:
-        if sys.argv[4] == "combined":
-            print "Up Left"
-            ul = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "up", "left")
-            print
-            print "Up Right"
-            ur = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "up", "right")
-            print
-            print "Down Left"
-            dl = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "down", "left")
-            print
-            print "Down Right"
-            dr = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "down", "right")
-            
-            #print "x(10)=", dl.g.get_node_by_id(10).graphics.x
-            
-            aligner = Aligner((ul.g, ur.g, dl.g, dr.g))
-            result = aligner.get_result()
-            fs = FastAndSimple(result, "output1.gml", 100, None, None)
-            fs.debug()
-            fs.post_adjustments()
-            fs.g.write_gml(sys.argv[2])
-        else:
-            fs = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-            fs.post_adjustments()
-            fs.g.write_gml(sys.argv[2])
-        
-        #import os
-        #os.system("./graphwin %s &" % sys.argv[2])
+        cProfile.run('main()')
     else:
         print "Insufficient parameters"
-        print "Usage: python %s <input file> <output file> <minimum distance> <combined/up/down> [left/right]" % sys.argv[0]
+        print "Usage: python %s <input file> <output file> <minimum distance> <combined/up/down> [left/right] [layers/positions]" % sys.argv[0]
