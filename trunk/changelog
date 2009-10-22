@@ -1,5 +1,11 @@
 2009-10-22  Ahmet Emre Aladağ  <mail@mail.com>
 
+	* r10
+	* Fixed mirroring problems in rightmost layouts. Now decrementing the
+	coordinates.
+
+2009-10-22  Ahmet Emre Aladağ  <mail@mail.com>
+
 	* r9
 	* Some bug fixes like r = -1, etc.
 

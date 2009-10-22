@@ -165,12 +165,13 @@ class FastAndSimple:
         """
 
         """
+        print "Checking for overlaps..."
         # Print the nodes that are overlapping
         #print "Checking overlapping nodes."
         for layer in self.g.layers:
             #print "Layer %d" % layer
             #print_list(self.g.layers[layer])
-            for u in self.g.layers[layer]:                
+            for u in self.g.layers[layer]:    
                 for v in self.g.layers[layer]:
                     if u!=v and u.graphics.x == v.graphics.x and u.graphics.y == v.graphics.y:
                         print "%s (%0.0f, %0.0f) , %s (%0.0f, %0.0f)" % (u.id, u.graphics.x, u.graphics.y, v.id, v.graphics.x, v.graphics.y)
@@ -375,7 +376,7 @@ class FastAndSimple:
                     if self.sink[v] != self.sink[u]:                                               
                         self.shift[self.sink[u]] = min(self.shift[self.sink[u]], self.x[v] - self.x[u] - self.minimum_distance)
                     else:
-                        self.x[v]  = max(self.x[v], self.x[u] + self.minimum_distance)
+                        self.x[v]  = min(self.x[v], self.x[u] - self.minimum_distance)
                 
                 w = self.align[w]
     
@@ -425,7 +426,7 @@ class FastAndSimple:
             if self.shift[self.sink[self.root[v]]] < float("infinity"):
                 #print "Shifting ", v.id
                 #print "x[%d] = %d" % (v.id, self.x[v])
-                self.x[v] = self.x[v] + self.shift[self.sink[self.root[v]]]
+                self.x[v] = self.x[v] - self.shift[self.sink[self.root[v]]]
             
     def write_layers(self):
         f = open("layers.txt", "w")
@@ -543,10 +544,12 @@ if __name__ == "__main__":
             aligner = Aligner((ul.g, ur.g, dl.g, dr.g))
             result = aligner.get_result()
             fs = FastAndSimple(result, "output1.gml", 100, None, None)
+            fs.debug()
             #fs.post_adjustments()
             fs.g.write_gml(sys.argv[2])
         else:
             fs = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+            fs.debug()
             #fs.post_adjustments()
             fs.g.write_gml(sys.argv[2])
         
