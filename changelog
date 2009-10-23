@@ -1,5 +1,11 @@
 2009-10-23  Ahmet Emre Aladağ  <mail@mail.com>
 
+	* r13
+	* Faster get_node_by_id method.
+	* Faster get_edge method.
+
+2009-10-23  Ahmet Emre Aladağ  <mail@mail.com>
+
 	* r12
 	* Improved get_edge method.
 	* Added layers.txt / positions.txt generation / choice support
