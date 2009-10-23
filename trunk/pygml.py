@@ -101,6 +101,7 @@ class Node(BaseClass):
     def __init__(self):
         self.incoming_edges = []
         self.outgoing_edges = []
+        self.outgoing_dict = {}
 
     def __unicode__(self):
         #fields = filter(lambda x: isinstance(self.__dict__[x], str) or isinstance(self.__dict__[x], int), self.__dict__)
@@ -144,8 +145,10 @@ class Graph:
         self.edges = []
         self.virtual_nodes = []
         self.real_nodes = []
-
+        
+        self.node_dict = {}
         self.layers = {}
+        
         if filename:
             self.read_gml(filename)
 
@@ -370,48 +373,40 @@ class Graph:
         """Sets u and v attributes as node objects.
         Appends the edge to the incoming and outgoing edge lists
         of the corresponding nodes."""
-
+        
         for edge in self.edges:
             edge.u = self.nodes[edge.source]	
             edge.v = self.nodes[edge.target]
 
             edge.u.outgoing_edges.append(edge)
             edge.v.incoming_edges.append(edge)
+            
+            
+            for e in edge.u.outgoing_edges:
+                edge.u.outgoing_dict[e.v] = e
+            
         for node in self.nodes:
             node.incoming_edges.sort(lambda e1,e2: cmp(float(e1.u.graphics.x), int(e2.u.graphics.x)))
             node.outgoing_edges.sort(lambda e1,e2: cmp(float(e1.v.graphics.x), int(e2.v.graphics.x)))
             
+            self.node_dict[node.id] = node
             #node.incoming_edges.sort(lambda u,v: cmp(float(u.graphics.x), float(v.graphics.x)))
             #node.outgoing_edges.sort(lambda u,v: cmp(float(u.graphics.x), float(v.graphics.x)))
     # Service methods
     def get_node(self, layer, position):
         """Returns the requested node with layer and position number given.
 
-        @type Node
+        @return Node
         """
-
         return self.layers[layer][position]
 
     def get_node_by_id(self, id):
         """Returns the node with the given id."""
-        for node in self.nodes:
-            if node.id == id:
-                return node
-        return None
+        return self.node_dict.get(id)
 
     def get_edge(self, u, v):
         """Returns the edge with the given source and target nodes."""
-        for edge in u.outgoing_edges:
-            if edge.v == v:
-                return edge
-        
-        """
-        oe = u.outgoing_edges
-        ie = v.incoming_edges
-        result = set(oe).intersection(set(ie))
-        if len(result) > 0:
-            return list(result)[0]"""
-        return None
+        return u.outgoing_dict.get(v)
     
     def get_double_edge(self, u, v):
         """Returns the edge with the given or reverse source and target nodes."""
