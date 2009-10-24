@@ -1,5 +1,11 @@
 2009-10-24  Ahmet Emre Aladağ  <mail@mail.com>
 
+	* r15
+	* Added horizontal compaction up and down versions
+	* Fixed some bugs
+
+2009-10-24  Ahmet Emre Aladağ  <mail@mail.com>
+
 	* r14
 	* Added straighten_edge_bends heuristic method.
 	* Added hide_dummy_nodes method.

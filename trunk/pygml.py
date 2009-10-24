@@ -362,7 +362,7 @@ class Graph:
         adds the node to virtual_nodes or real_nodes lists of the graph."""
 
         for node in self.nodes:
-            if node.graphics.fill == color:
+            if node.graphics.fill==color:
                 node.virtual = True
                 self.virtual_nodes.append(node)
             else:
