@@ -27,25 +27,25 @@ class FastAndSimple:
         print "Preprocessing..."
         self.preprocessing()
         # Mark type 1 crossing edges with red.
-        """for edge in self.g.edges:
+        for edge in self.g.edges:
             if edge.marked:
                 edge.graphics.fill = "#FF0000"
-        """
+        
         
         if vstart == "up":
             if hstart == "left":
                 self.vertical_alignment_up_left()
-                self.horizontal_compaction_left()
+                self.horizontal_compaction_up_left()
             else:
                 self.vertical_alignment_up_right()
-                self.horizontal_compaction_right()
+                self.horizontal_compaction_up_right()
         else:
             if hstart == "left":
                 self.vertical_alignment_down_left()
-                self.horizontal_compaction_left()
+                self.horizontal_compaction_down_left()
             else:
                 self.vertical_alignment_down_right()
-                self.horizontal_compaction_right()
+                self.horizontal_compaction_down_right()
              
         # Assign the computed coordinates
         for v in self.x:
@@ -53,10 +53,10 @@ class FastAndSimple:
         
         print "Weighted y coordinates..."
         self.weighted_y_coordinates(100)
-        #self.debug()
+        self.debug()
         #self.adjustments()
         #self.g.write_gml(output_file)
-        self.straighten_bends()
+        #self.straighten_bends()
         if layersorpositions == 'layers':
             self.write_layers()
         elif layersorpositions == 'positions':
@@ -205,7 +205,8 @@ class FastAndSimple:
                                     u.graphics.x = v.graphics.x
     def hide_dummy_nodes(self):
         """Hides dummy nodes in the graph"""
-        print self.g.virtual_nodes
+        print "Hiding dummy nodes..."
+        #print self.g.virtual_nodes
         for node in self.g.virtual_nodes:
             node.graphics.w = 0.01
             node.graphics.h = 0.01
@@ -344,7 +345,6 @@ class FastAndSimple:
         
         for layer in range(len(self.g.layers)):
             r = len(self.g.layers[layer]) # Changed 0 to last index for right
-            
             for v in self.g.layers[layer][::-1]: # Changed order for right
                 neighbors = v.upper_neighbors()
                 d = float(len(neighbors))
@@ -422,8 +422,12 @@ class FastAndSimple:
                     u = self.root[w.pred]
                     self.place_block_left(u)
                     if self.sink[v] == v:
+                        #print "First time. v=%d (Layer %d, position %d), u=%d (Layer %d, position %d), sink[%d]=%d, sink[%d]=%d" % (v.id, v.layer, v.position, u.id, u.layer, u.position, v.id, self.sink[v].id, u.id, self.sink[u].id)
                         self.sink[v] = self.sink[u]
-                    if self.sink[v] != self.sink[u]:                                               
+                    if self.sink[v] != self.sink[u]:      
+                        #print
+                        #print "\tv=%d, u=%d, sink[%d]=%d, sink[%d]=%d" % (v.id, u.id, v.id, self.sink[v].id, u.id, self.sink[u].id)
+                        #print
                         self.shift[self.sink[u]] = min(self.shift[self.sink[u]], self.x[v] - self.x[u] - self.minimum_distance)
                     else:
                         self.x[v]  = max(self.x[v], self.x[u] + self.minimum_distance)
@@ -442,7 +446,7 @@ class FastAndSimple:
                     if self.sink[v] == v:
                         self.sink[v] = self.sink[u]
                     if self.sink[v] != self.sink[u]:                                               
-                        self.shift[self.sink[u]] = min(self.shift[self.sink[u]], self.x[v] - self.x[u] - self.minimum_distance)
+                        self.shift[self.sink[u]] = min(self.shift[self.sink[u]], self.x[u] - self.x[v] - self.minimum_distance)
                     else:
                         self.x[v]  = min(self.x[v], self.x[u] - self.minimum_distance)
                 
@@ -450,8 +454,8 @@ class FastAndSimple:
     
     
     
-    def horizontal_compaction_left(self):
-        print "Horizontal Compaction left..."
+    def horizontal_compaction_up_left(self):
+        print "Horizontal Compaction up left..."
         for v in self.g.nodes:
             self.sink[v] = v
             self.shift[v] = float("infinity")
@@ -470,23 +474,66 @@ class FastAndSimple:
                 if v==self.root[v] and self.shift[self.sink[v]] < float("infinity"):
                     self.x[v] = self.x[v] + self.shift[self.sink[v]]
                     
+    def horizontal_compaction_down_left(self):
+        print "Horizontal Compaction down left..."
+        for v in self.g.nodes:
+            self.sink[v] = v
+            self.shift[v] = float("infinity")
         
+        num_layers = len(self.g.layers)
+        # root coordinates relative to self.sink        
+        for layer in xrange(num_layers-1, -1, -1):
+            for v in self.g.layers[layer]:
+                if self.root[v] == v:
+                    self.place_block_left(v)
+                
+        # absolute coordinates
+        #for v in self.g.nodes:
+        for layer in xrange(num_layers-1, -1, -1):
+            for v in self.g.layers[layer]:
+                self.x[v] = self.x[self.root[v]]
+                if v==self.root[v] and self.shift[self.sink[v]] < float("infinity"):
+                    self.x[v] = self.x[v] + self.shift[self.sink[v]]    
             
-    def horizontal_compaction_right(self):
-        print "Horizontal Compaction right..."
+    def horizontal_compaction_up_right(self):
+        print "Horizontal Compaction up right..."
         for v in self.g.nodes:
             self.sink[v] = v
             self.shift[v] = float("infinity")
     
         # root coordinates relative to self.sink
-        for v in self.g.nodes:
-            if self.root[v] == v:
-                self.place_block_right(v)
+        
+        for layer in self.g.layers:
+            for v in self.g.layers[layer][::-1]:
+                if self.root[v] == v:
+                    self.place_block_right(v)
+                    
         # absolute coordinates
+        for layer in self.g.layers:
+            for v in self.g.layers[layer][::-1]:
+                self.x[v] = self.x[self.root[v]]
+                if v==self.root[v] and self.shift[self.sink[v]] < float("infinity"):
+                    self.x[v] = self.x[v] - self.shift[self.sink[v]]
+                    
+    def horizontal_compaction_down_right(self):
+        print "Horizontal Compaction down right..."
         for v in self.g.nodes:
-            self.x[v] = self.x[self.root[v]]
-            if v==self.root[v] and self.shift[self.sink[v]] < float("infinity"):
-                self.x[v] = self.x[v] - self.shift[self.sink[v]]
+            self.sink[v] = v
+            self.shift[v] = float("infinity")
+    
+        num_layers = len(self.g.layers)
+        # root coordinates relative to self.sink
+        for layer in xrange(num_layers-1, -1, -1):
+            for v in self.g.layers[layer][::-1]:
+                if self.root[v] == v:
+                    self.place_block_right(v)
+                    
+        # absolute coordinates
+        for layer in xrange(num_layers-1, -1, -1):
+            for v in self.g.layers[layer][::-1]:
+                self.x[v] = self.x[self.root[v]]
+                if v==self.root[v] and self.shift[self.sink[v]] < float("infinity"):
+                    self.x[v] = self.x[v] - self.shift[self.sink[v]]            
     
     def write_positions(self):
         f = open("positions.txt", "w")
@@ -618,7 +665,7 @@ def main():
         fs = FastAndSimple(result, sys.argv[2], 100, None, None)
         fs.hide_dummy_nodes()
         #fs.post_adjustments()
-        #fs.debug()
+        fs.debug()
         fs.g.write_gml(sys.argv[2])
         fs.write_layers()
     else:
