@@ -1,3 +1,9 @@
+2009-10-24  Ahmet Emre Aladağ  <mail@mail.com>
+
+	* r14
+	* Added straighten_edge_bends heuristic method.
+	* Added hide_dummy_nodes method.
+
 2009-10-23  Ahmet Emre Aladağ  <mail@mail.com>
 
 	* r13

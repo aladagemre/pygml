@@ -20,9 +20,7 @@ class FastAndSimple:
         if not (vstart and hstart):
             return
         
-        #get_layer = lambda x: self.g.layers[x]
-        #self.post_adjustments()
-        #self.g.write_gml(output_file)
+           
         #if self.detect_type2():
         #print "Because of the type 2 crossings, there might be problems."
             
@@ -58,10 +56,13 @@ class FastAndSimple:
         #self.debug()
         #self.adjustments()
         #self.g.write_gml(output_file)
+        self.straighten_bends()
         if layersorpositions == 'layers':
             self.write_layers()
         elif layersorpositions == 'positions':
+            self.post_adjustments()
             self.write_positions()
+            
             
     def detect_type2(self):
         detected = False
@@ -102,7 +103,7 @@ class FastAndSimple:
         for layer in self.g.layers:
             layer_sums[layer]/=total_sum
             if layer > 0:
-                    last_y += base_height * len(self.g.layers)* layer_sums[layer-1]
+                    last_y += base_height/4 + base_height * len(self.g.layers)* layer_sums[layer-1]
             for node in self.g.layers[layer]:                
                     node.graphics.y = last_y
             
@@ -110,6 +111,7 @@ class FastAndSimple:
         """Some post adjustments after balancing. (terrible)"""
         # Shifts the overlapping nodes by half of their widths.
         print "Post ad"
+        
         layer_overlaps = {0: 1}
         tour = 0
         while sum(layer_overlaps.values()) != 0:
@@ -122,7 +124,10 @@ class FastAndSimple:
                     for v in self.g.layers[layer]:
                         if u!=v and abs(u.graphics.x - v.graphics.x) < (u.graphics.w + v.graphics.w)/2 :
                             if tour > 15:
-                                print u.id,":",u.graphicsx,"---",v.id,":", v.graphics.x
+                                print u.id,":",u.graphics.x,"---",v.id,":", v.graphics.x
+                                print "-------------------------------------------------"*10
+                                return
+                            
                             
                             print "Adjusting %d and %d" % (u.id, v.id)
                             if u.position < v.position:
@@ -145,7 +150,62 @@ class FastAndSimple:
                                 else:
                                     v.graphics.x = prev_x + self.minimum_distance/2
                             layer_overlaps[layer] = 1
-        """                
+    def straighten_bends(self):
+        """
+            from top to bottom
+          from left to right
+               if x is dummy move x left OR right as much as possible
+               (without molesting any left/right neighbors on the same
+               layer ) so that the slope of segment (x,y) is maximized,
+               where y is the neighbor of x in the following layer.
+               """
+        for layer in self.g.layers:
+            for u in self.g.layers[layer]:
+                if len(u.outgoing_edges) == 0:
+                    continue
+                v = u.outgoing_edges[0].v
+                if u.virtual and v.virtual:
+                    
+                    
+                    dx = u.graphics.x - v.graphics.x
+                    if dx == 0:
+                        continue
+                    if dx < 0:
+                        # If u is on the upper left of v,
+                        if v.pred:
+                            # If a preceding node exists
+                            if u.graphics.x - v.pred.graphics.x - self.minimum_distance > 0:
+                                # If it is feasible to move y left, do it.
+                                v.graphics.x = u.graphics.x
+                            else:
+                                # If it is not, then move x right.
+                                if u.succ:
+                                    # If a successor node exists,
+                                    if u.succ.graphics.x - v.graphics.x - self.minimum_distance > 0:
+                                        # If it is feasible to move x right, do it.
+                                        u.graphics.x = v.graphics.x
+                                else:
+                                    # If no preceding node, move freely.
+                                    u.graphics.x = v.graphics.x
+                                
+                        else:
+                            v.graphics.x = u.graphics.x
+                    
+                    elif dx > 0:
+                        # If u is on the upper right side of v,
+                        if v.succ:
+                            if v.succ.graphics.x - u.graphics.x - self.minimum_distance > 0:
+                                v.graphics.x = u.graphics.x
+                            else:
+                                if u.pred:
+                                    # If it is feasible to move u left, do it.
+                                    if v.graphics.x - u.pred.graphics.x - self.minimum_distance > 0:
+                                        u.graphics.x = v.graphics.x
+                                else:
+                                    u.graphics.x = v.graphics.x
+    def hide_dummy_nodes(self):
+        """Hides dummy nodes in the graph"""
+        print self.g.virtual_nodes
         for node in self.g.virtual_nodes:
             node.graphics.w = 0.01
             node.graphics.h = 0.01
@@ -153,8 +213,7 @@ class FastAndSimple:
             for edge in self.g.edges:
                 if edge.v.virtual:
                     edge.graphics.arrow = "none"
-                    """
-            
+                    
     def adjustments(self):
         """Some adjustments for the bug of the algorithm. Seperates overlapping nodes."""
         
@@ -434,7 +493,7 @@ class FastAndSimple:
         f.write("%d\n" % len(self.g.nodes))
         for layer in self.g.layers:
             this_layer = self.g.layers[layer]
-            f.write("%d " % len(this_layer) + " ".join(["%f %f" % (node.graphics.x, node.graphics.y) for node in this_layer]) + "\n")
+            f.write("%d " % len(this_layer) + " ".join(["%f %f" % (node.graphics.x, -1.0*node.graphics.y) for node in this_layer]) + "\n")
         f.close()
                 
                 
@@ -557,13 +616,14 @@ def main():
         aligner = Aligner((ul.g, ur.g, dl.g, dr.g))
         result = aligner.get_result()
         fs = FastAndSimple(result, sys.argv[2], 100, None, None)
+        fs.hide_dummy_nodes()
         #fs.post_adjustments()
         #fs.debug()
         fs.g.write_gml(sys.argv[2])
         fs.write_layers()
     else:
         fs = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
-        fs.post_adjustments()
+        #fs.post_adjustments()
         fs.g.write_gml(sys.argv[2])
     
     #import os
@@ -573,7 +633,8 @@ def main():
     
 if __name__ == "__main__":
     if len(sys.argv) > 4:
-        cProfile.run('main()')
+        #cProfile.run('main()')
+        main()
     else:
         print "Insufficient parameters"
         print "Usage: python %s <input file> <output file> <minimum distance> <combined/up/down> [left/right] [layers/positions]" % sys.argv[0]
