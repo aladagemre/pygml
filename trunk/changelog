@@ -1,4 +1,12 @@
 2009-10-25  Ahmet Emre Aladağ  <mail@mail.com>
+
+	* r17
+	* Added combined node sort heuristic method
+	* Now we sort the nodes after they are combined, to be faster.
+	* New decide_alignment metdhod for choosing the appropriate
+	alignment/compaction method according to the direction.
+
+2009-10-25  Ahmet Emre Aladağ  <mail@mail.com>
 	* r16
 	* Nodes with #FF8C00 are additionally accepted as dummy nodes.
 	* write_txt method introduced for layers/positions writing.
