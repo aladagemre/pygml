@@ -27,12 +27,27 @@ class FastAndSimple:
             
         print "Preprocessing..."
         self.preprocessing()
-        """# Mark type 1 crossing edges with red.
+
+        self.decide_alignment(vstart, hstart) # DOES ALIGNMENT AND COMPACTION
+        
+        #self.node_sort_heuristic()
+        # Assign the computed coordinates
+        for v in self.x:
+            v.graphics.x = float(self.x[v])
+        
+        print "Weighted y coordinates..."
+        self.weighted_y_coordinates(100)
+        #self.adjustments()
+        self.debug()
+        self.straighten_bends()
+            
+    def paint_type1(self):
+        # Mark type 1 crossing edges with red.
         for edge in self.g.edges:
             if edge.marked:
                 edge.graphics.fill = "#FF0000"
-        """
         
+    def decide_alignment(self, vstart, hstart):
         if vstart == "up":
             if hstart == "left":
                 self.vertical_alignment_up_left()
@@ -48,20 +63,6 @@ class FastAndSimple:
                 self.vertical_alignment_down_right()
                 self.horizontal_compaction_down_right()
         
-        self.node_sort_heuristic()
-        # Assign the computed coordinates
-        for v in self.x:
-            v.graphics.x = float(self.x[v])
-        
-        print "Weighted y coordinates..."
-        self.weighted_y_coordinates(100)
-        #self.adjustments()
-        self.debug()
-        
-        #self.g.write_gml(output_file)
-        self.straighten_bends()
-            
-            
     def detect_type2(self):
         detected = False
         for layer in self.g.layers:
@@ -460,7 +461,22 @@ class FastAndSimple:
                     n = n.succ
                 else:
                     finished = True
-
+    def node_sort_combined_heuristic(self):
+        for layer in self.g.layers:
+            #xcoords = [self.x[node] for node in self.g.layers[layer]]
+            #n = xcoords[0]
+            this_layer = self.g.layers[layer]
+            n = this_layer[0]
+            finished = False
+            while not finished:
+                if n.succ and n.graphics.x >= n.succ.graphics.x:
+                    n.graphics.x = n.graphics.x - self.minimum_distance
+                    n = this_layer[0]
+                    continue
+                if n.succ:
+                    n = n.succ
+                else:
+                    finished = True
 
     def horizontal_compaction_down_left(self):
         print "Horizontal Compaction down left..."
@@ -659,6 +675,7 @@ def main():
         aligner = Aligner((ul.g, ur.g, dl.g, dr.g))
         result = aligner.get_result()
         fs = FastAndSimple(result, sys.argv[2], sys.argv[3], None, None, sys.argv[6])
+        fs.node_sort_combined_heuristic()
         fs.straighten_bends()
         fs.hide_dummy_nodes()
         #fs.post_adjustments()
