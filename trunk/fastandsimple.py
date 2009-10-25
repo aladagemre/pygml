@@ -35,12 +35,46 @@ class FastAndSimple:
         for v in self.x:
             v.graphics.x = float(self.x[v])
         
+        
         print "Weighted y coordinates..."
         self.weighted_y_coordinates(100)
         #self.adjustments()
         self.debug()
-        self.straighten_bends()
-            
+        #self.straighten_bends()
+          
+    def correct_triple_edge(self):
+        """Corrects sloping inner segment of 3 segmented edges."""
+        print "Correcting triple edges..."
+        for u in self.g.virtual_nodes:
+            upper_real = u.upper_neighbors()[0]
+            if upper_real.virtual: continue
+
+            v = u.lower_neighbors()[0]
+            if not v.virtual: continue
+
+            lower_real = v.lower_neighbors()[0]
+            if lower_real.virtual: continue
+            print "Found a triple edge"
+            if u.graphics.x == v.graphics.x: continue
+            print "that needs to be corrected."
+
+            if upper_real.graphics.x + lower_real.graphics.x > u.graphics.x + v.graphics.x:
+                # Means that real nodes are on the right of the dummies.
+                # So we should shift the dummy on the left to right.
+                print "Reals are righter."
+                if u.graphics.x < v.graphics.x:
+                    print "U is on the left of v"
+                    # If u is on the left of v,
+                    if self.feasible(v.graphics.x, u.layer):
+                        print "It is feasible to put it right."
+                        # If no other node exists there,
+                        u.graphics.x = v.graphics.x
+    def feasible(self, x, layer):
+        get_x = lambda a: a.graphics.x
+        if x in ( get_x(v) for v in self.g.layers[layer] ):
+            return False
+        return True
+
     def paint_type1(self):
         # Mark type 1 crossing edges with red.
         for edge in self.g.edges:
@@ -257,15 +291,19 @@ class FastAndSimple:
         print "Checking for overlaps..."
         # Print the nodes that are overlapping
         #print "Checking overlapping nodes."
+        count = 0
         for layer in self.g.layers:
             #print "Layer %d" % layer
             #print_list(self.g.layers[layer])
             for u in self.g.layers[layer]:    
                 for v in self.g.layers[layer]:
                     if u!=v and u.graphics.x == v.graphics.x and u.graphics.y == v.graphics.y:
-                        print "%s (%0.0f, %0.0f) , %s (%0.0f, %0.0f)" % (u.id, u.graphics.x, u.graphics.y, v.id, v.graphics.x, v.graphics.y)
-                        
-            
+                        #print "%s (%0.0f, %0.0f) , %s (%0.0f, %0.0f)" % (u.id, u.graphics.x, u.graphics.y, v.id, v.graphics.x, v.graphics.y)
+                        count+=1
+        if count:
+            print "%d overlaps exist." % count
+        #if count > 10:
+            #self.g.write_gml("/home/emre/Desktop/o/overlapping%d.gml" % count)
     def preprocessing(self):
         """Marks the edges with type 1 crossing."""
         h = len(self.g.layers)
@@ -676,8 +714,9 @@ def main():
         result = aligner.get_result()
         fs = FastAndSimple(result, sys.argv[2], sys.argv[3], None, None, sys.argv[6])
         fs.node_sort_combined_heuristic()
-        fs.straighten_bends()
+        #fs.straighten_bends()
         fs.hide_dummy_nodes()
+        fs.correct_triple_edge()
         #fs.post_adjustments()
         fs.debug()
         fs.g.write_gml(sys.argv[2])
