@@ -1,4 +1,8 @@
 2009-10-25  Ahmet Emre Aladağ  <mail@mail.com>
+	* r18
+	* Added correct_triple_edges method introduction but it's not complete.
+
+2009-10-25  Ahmet Emre Aladağ  <mail@mail.com>
 
 	* r17
 	* Added combined node sort heuristic method
