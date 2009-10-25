@@ -1,3 +1,12 @@
+2009-10-25  Ahmet Emre Aladağ  <mail@mail.com>
+	* r16
+	* Nodes with #FF8C00 are additionally accepted as dummy nodes.
+	* write_txt method introduced for layers/positions writing.
+	* write_txt runs at the end of a combined process.
+	* node_sort_heuristic method introduced. Removes overlaps for each way.
+	* Weighted y coordinates are now more apart from each other for small
+	weights.
+
 2009-10-24  Ahmet Emre Aladağ  <mail@mail.com>
 
 	* r15
