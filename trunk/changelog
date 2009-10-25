@@ -1,4 +1,10 @@
 2009-10-25  Ahmet Emre Aladağ  <mail@mail.com>
+	
+	* r19
+	* Fixed color option to one color (just to make it work)
+	* Increased base height constant in weighted y coordinates method.
+
+2009-10-25  Ahmet Emre Aladağ  <mail@mail.com>
 	* r18
 	* Added correct_triple_edges method introduction but it's not complete.
 
