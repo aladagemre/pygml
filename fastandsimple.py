@@ -113,7 +113,7 @@ class FastAndSimple:
                                         detected = True
         return detected
             
-    def weighted_y_coordinates(self, base_height):
+    def weighted_y_coordinates(self, base_height=100.0):
         
         total_sum = 0.0
         layer_sums = {}
@@ -136,7 +136,7 @@ class FastAndSimple:
         for layer in self.g.layers:
             layer_sums[layer]/=total_sum
             if layer > 0:
-                    last_y += base_height + base_height * len(self.g.layers)* layer_sums[layer-1]
+                    last_y += base_height*1.5 + base_height * len(self.g.layers)* layer_sums[layer-1]
             for node in self.g.layers[layer]:                
                     node.graphics.y = last_y
             
@@ -716,7 +716,8 @@ def main():
         fs.node_sort_combined_heuristic()
         #fs.straighten_bends()
         fs.hide_dummy_nodes()
-        fs.correct_triple_edge()
+        #fs.correct_triple_edge()
+        fs.weighted_y_coordinates()
         #fs.post_adjustments()
         fs.debug()
         fs.g.write_gml(sys.argv[2])
