@@ -286,7 +286,7 @@ class FastAndSimple:
     
     def debug(self):
         """
-
+        Some debugging stuff
         """
         print "Checking for overlaps..."
         # Print the nodes that are overlapping

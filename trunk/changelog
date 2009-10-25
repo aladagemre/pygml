@@ -1,3 +1,9 @@
+2009-10-26  Ahmet Emre Aladağ  <mail@mail.com>
+
+	* r20
+	* y coords does not have to start from 0 in order to be recognized. We now
+	sort them and assign indices according to this sorting.
+
 2009-10-25  Ahmet Emre Aladağ  <mail@mail.com>
 	
 	* r19

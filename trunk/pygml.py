@@ -335,13 +335,23 @@ class Graph:
         """Determines the vertical layers by dividing y coordinate to 100.
         Then it sorts each layer according to the x coordinate and
         Assigns the position attribute to each node."""
-
+        y_values = set([])
         for node in self.nodes:
+            y_values.add(node.graphics.y)
+            """
             node.layer = int(round(node.graphics.y / 100))
             if not self.layers.get(node.layer):
                 self.layers[node.layer] = []
+            self.layers[node.layer].append(node)"""
+        y_values = list(y_values)
+        y_values.sort()
+        for node in self.nodes:
+            node.layer = y_values.index(node.graphics.y)
+            if not self.layers.get(node.layer):
+                self.layers[node.layer] = []
             self.layers[node.layer].append(node)
-
+        
+        # Set preceding and succeding nodes.
         for layer in self.layers:
             self.layers[layer].sort(lambda u,v: cmp(int(u.graphics.x), int(v.graphics.x)))
             # Now set the position info into the nodes
