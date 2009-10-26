@@ -184,58 +184,90 @@ class FastAndSimple:
                                     v.graphics.x = prev_x + self.minimum_distance/2
                             layer_overlaps[layer] = 1
     def straighten_bends(self):
-        """
-            from top to bottom
-          from left to right
-               if x is dummy move x left OR right as much as possible
-               (without molesting any left/right neighbors on the same
-               layer ) so that the slope of segment (x,y) is maximized,
-               where y is the neighbor of x in the following layer.
-               """
-        for layer in self.g.layers:
-            for u in self.g.layers[layer]:
-                if len(u.outgoing_edges) == 0:
+        """Straightens the edge bends."""
+        print "Straightening bends."                            
+        
+        # Start from the middle.
+        
+        l = len(self.g.layers)
+        if l%2 == 0:
+            b = l/2 - 1
+            c = b + 1
+        else:
+            b = int(floor(l/2))
+            c = b
+            
+        a = 0
+        d = l-1
+        
+        self.g.find_virtual_vertices('#FF8C00')
+        # Middle to Top
+        for layer in xrange(b,a-1,-1):
+            v_nodes = [v for v in self.g.layers[layer] if v.virtual ]           
+            length_of_layer = len(v_nodes)
+            middle = int(floor(length_of_layer / 2))
+            
+            # From right to left.
+            our_list = v_nodes[middle:]
+            our_list.reverse()
+            for u in our_list:
+                v = u.incoming_edges[0].u
+                if u.graphics.x == v.graphics.x:
                     continue
+                if v.virtual:
+                    if self.feasible(u.graphics.x, v.layer):
+                        v.graphics.x = u.graphics.x
+                    elif self.feasible(v.graphics.x, u.layer):
+                        u.graphics.x = v.graphics.x
+            
+            # From left to right
+            for u in v_nodes[0:middle+1]:
+                v = u.incoming_edges[0].u
+                if u.graphics.x == v.graphics.x:
+                    continue
+            
+                if v.virtual:
+                    if self.feasible(u.graphics.x, v.layer):
+                        v.graphics.x = u.graphics.x
+                    elif self.feasible(v.graphics.x, u.layer):
+                        u.graphics.x = v.graphics.x
+                        
+                    
+                    
+        # Middle to Bottom
+        for layer in xrange(b,d+1):
+            v_nodes = [v for v in self.g.layers[layer] if v.virtual ]
+            
+            length_of_layer = len(v_nodes)
+            middle = int(floor(length_of_layer / 2))
+            our_list = v_nodes[middle:]
+            our_list.reverse()
+            for u in our_list:
                 v = u.outgoing_edges[0].v
-                if u.virtual and v.virtual:
+                if u.graphics.x == v.graphics.x:
+                    continue
+            
+                if v.virtual:
+                    if self.feasible(v.graphics.x, u.layer):
+                        u.graphics.x = v.graphics.x
+                        
+                    elif self.feasible(u.graphics.x, v.layer):
+                        v.graphics.x = u.graphics.x
                     
-                    
-                    dx = u.graphics.x - v.graphics.x
-                    if dx == 0:
-                        continue
-                    if dx < 0:
-                        # If u is on the upper left of v,
-                        if v.pred:
-                            # If a preceding node exists
-                            if u.graphics.x - v.pred.graphics.x - self.minimum_distance > 0:
-                                # If it is feasible to move y left, do it.
-                                v.graphics.x = u.graphics.x
-                            else:
-                                # If it is not, then move x right.
-                                if u.succ:
-                                    # If a successor node exists,
-                                    if u.succ.graphics.x - v.graphics.x - self.minimum_distance > 0:
-                                        # If it is feasible to move x right, do it.
-                                        u.graphics.x = v.graphics.x
-                                else:
-                                    # If no preceding node, move freely.
-                                    u.graphics.x = v.graphics.x
-                                
-                        else:
-                            v.graphics.x = u.graphics.x
-                    
-                    elif dx > 0:
-                        # If u is on the upper right side of v,
-                        if v.succ:
-                            if v.succ.graphics.x - u.graphics.x - self.minimum_distance > 0:
-                                v.graphics.x = u.graphics.x
-                            else:
-                                if u.pred:
-                                    # If it is feasible to move u left, do it.
-                                    if v.graphics.x - u.pred.graphics.x - self.minimum_distance > 0:
-                                        u.graphics.x = v.graphics.x
-                                else:
-                                    u.graphics.x = v.graphics.x
+            # From left to right
+            
+            for u in v_nodes[0:middle+1]:
+                v = u.outgoing_edges[0].v
+                if u.graphics.x == v.graphics.x:
+                    continue
+            
+                if v.virtual:
+                    if self.feasible(v.graphics.x, u.layer):
+                        u.graphics.x = v.graphics.x     
+                    elif self.feasible(u.graphics.x, v.layer):
+                        v.graphics.x = u.graphics.x
+       
+                        
     def hide_dummy_nodes(self):
         """Hides dummy nodes in the graph"""
         print "Hiding dummy nodes..."
@@ -243,7 +275,7 @@ class FastAndSimple:
         for node in self.g.virtual_nodes:
             node.graphics.w = 0.01
             node.graphics.h = 0.01
-            node.graphics.fill = "#FFFFFF"
+            #node.graphics.fill = "#FFFFFF"
             for edge in self.g.edges:
                 if edge.v.virtual:
                     edge.graphics.arrow = "none"
@@ -621,7 +653,7 @@ class Aligner:
                 min_width = w
                 reference_graph = graph
         #print "Minimum width :", names[graphs.index(reference_graph)], min_width
-        
+        self.reference_direction = names[graphs.index(reference_graph)]
         (ul, ur, dl, dr) = graphs
         
         min_ref = reference_graph.min_x()        
@@ -686,10 +718,9 @@ class Aligner:
         
         
         self.result = reference_graph
-    
+        
     def get_result(self):
-        return self.result
-            
+        return self.result            
 
 # -----------------------------------------
 
@@ -713,11 +744,12 @@ def main():
         aligner = Aligner((ul.g, ur.g, dl.g, dr.g))
         result = aligner.get_result()
         fs = FastAndSimple(result, sys.argv[2], sys.argv[3], None, None, sys.argv[6])
+        
         fs.node_sort_combined_heuristic()
-        #fs.straighten_bends()
+        fs.straighten_bends()
         fs.hide_dummy_nodes()
-        #fs.correct_triple_edge()
-        fs.weighted_y_coordinates()
+        #fs.correct_triple_edge()     # No need for now
+        #fs.weighted_y_coordinates()  # LEDA does this.
         #fs.post_adjustments()
         fs.debug()
         fs.g.write_gml(sys.argv[2])
@@ -725,6 +757,9 @@ def main():
     else:
         # SINGLE WAY
         fs = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+        
+        fs.node_sort_combined_heuristic()        
+        fs.straighten_bends()        
         fs.hide_dummy_nodes()
         #fs.post_adjustments()
         fs.g.write_gml(sys.argv[2])

@@ -1,4 +1,13 @@
 2009-10-26  Ahmet Emre Aladağ  <mail@mail.com>
+
+	* r22
+	* Added new straighten_bends algorithm. It works pretty well.
+	* Disabled y-coordinate assignment
+	* Fixed bug. Used to mark dummy nodes with #FFFFFF. We stop doing that so
+	that results from LEDA are good.
+
+
+2009-10-26  Ahmet Emre Aladağ  <mail@mail.com>
 	* r21
 	* Added give-weights.py, giving random weights %30 heavy and %70 light
 	weights.
