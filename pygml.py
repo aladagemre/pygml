@@ -191,7 +191,7 @@ class Graph:
 
 
         for line in f:
-            line = line.strip("\n").strip(" ").strip("\r")
+            line = line.strip("\n").strip(" ").strip("\r").strip("\t")
             parts = line.split(" ")
 
             # HEADER PARSING

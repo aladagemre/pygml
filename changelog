@@ -1,4 +1,11 @@
 2009-10-26  Ahmet Emre Aladağ  <mail@mail.com>
+	* r21
+	* Added give-weights.py, giving random weights %30 heavy and %70 light
+	weights.
+	* Added gml2leda.py, a C++ code generator.
+	* Fixed \t reading bug in GML parser.
+
+2009-10-26  Ahmet Emre Aladağ  <mail@mail.com>
 
 	* r20
 	* y coords does not have to start from 0 in order to be recognized. We now
