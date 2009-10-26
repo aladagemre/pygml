@@ -1,5 +1,12 @@
 2009-10-26  Ahmet Emre Aladağ  <mail@mail.com>
 
+	* r24
+	* Middle to top bend removal features added:
+		- If there's only one bend, align the bend point to the closest
+		- Align the first dummy after a real to the other dummies.
+
+2009-10-26  Ahmet Emre Aladağ  <mail@mail.com>
+
 	* r22
 	* Added new straighten_bends algorithm. It works pretty well.
 	* Disabled y-coordinate assignment

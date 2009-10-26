@@ -183,6 +183,28 @@ class FastAndSimple:
                                 else:
                                     v.graphics.x = prev_x + self.minimum_distance/2
                             layer_overlaps[layer] = 1
+    def order_changes(self, node, target_x):
+        if target_x > node.graphics.x:
+            # If we are moving the node to the right,
+            if not node.succ: return False
+            if node.succ.graphics.x <= target_x:
+                # If we passed the successor node, the order has changed.
+                return True
+            else:
+                return False
+        elif target_x < node.graphics.x:
+            # If we are moving the node to the left,
+            if not node.pred: return False
+            if node.pred.graphics.x >= target_x:
+                # If we passed the predecessor node, the order has changed.
+                return True
+            else:
+                return False
+        else:
+            # If same coordinate given, order doesn't change.
+            return False
+            
+        
     def straighten_bends(self):
         """Straightens the edge bends."""
         print "Straightening bends."                            
@@ -201,17 +223,20 @@ class FastAndSimple:
         d = l-1
         
         self.g.find_virtual_vertices('#FF8C00')
+        
+        # ####################################################################################
         # Middle to Top
         for layer in xrange(b,a-1,-1):
             v_nodes = [v for v in self.g.layers[layer] if v.virtual ]           
             length_of_layer = len(v_nodes)
             middle = int(floor(length_of_layer / 2))
-            
+            # -----------------------------------------------------------------------------------------
             # From right to left.
             our_list = v_nodes[middle:]
             our_list.reverse()
             for u in our_list:
                 v = u.incoming_edges[0].u
+                t = u.outgoing_edges[0].v
                 if u.graphics.x == v.graphics.x:
                     continue
                 if v.virtual:
@@ -219,21 +244,67 @@ class FastAndSimple:
                         v.graphics.x = u.graphics.x
                     elif self.feasible(v.graphics.x, u.layer):
                         u.graphics.x = v.graphics.x
-            
+                # Only one bend => align vertically to the closest neighbor.
+                elif not t.virtual:
+                    if abs(v.graphics.x - u.graphics.x) > abs(t.graphics.x - u.graphics.x):
+                        boss = t
+                    else:
+                        boss = v
+                        
+                    if self.feasible(boss.graphics.x, u.layer) and not self.order_changes(u, boss.graphics.x):
+                        u.graphics.x = boss.graphics.x
+                    elif self.feasible(u.graphics.x, boss.layer) and not self.order_changes(boss, u.graphics.x):
+                        boss.graphics.x = u.graphics.x
+                        
+                else:
+                    # First dummy node after real.
+                    # Align u to t.
+                    boss = t
+                    if self.feasible(boss.graphics.x, u.layer) and not self.order_changes(u, boss.graphics.x):
+                        u.graphics.x = boss.graphics.x
+                    # MAYBE WE SHOULD REMOVE THIS ELSE! 
+                    elif self.feasible(u.graphics.x, boss.layer) and not self.order_changes(boss, u.graphics.x):
+                        boss.graphics.x = u.graphics.x
+            # ---------------------------------------------------------------------------------------
             # From left to right
             for u in v_nodes[0:middle+1]:
                 v = u.incoming_edges[0].u
+                t = u.outgoing_edges[0].v
                 if u.graphics.x == v.graphics.x:
                     continue
             
                 if v.virtual:
-                    if self.feasible(u.graphics.x, v.layer):
+                    if self.feasible(u.graphics.x, v.layer) and not self.order_changes(v, u.graphics.x):
+                        # Align v to u
                         v.graphics.x = u.graphics.x
-                    elif self.feasible(v.graphics.x, u.layer):
+                    elif self.feasible(v.graphics.x, u.layer) and not self.order_changes(u, v.graphics.x):
+                        # Align u to v
                         u.graphics.x = v.graphics.x
+                
+                # Only one bend => align vertically to the closest neighbor.
+                elif not t.virtual:
+                    print "Only one bend! v=%d, u=%d, t=%d" % (v.id, u.id, t.id)
+                    if abs(v.graphics.x - u.graphics.x) > abs(t.graphics.x - u.graphics.x):
+                        boss = t
+                    else:
+                        boss = v
                         
-                    
-                    
+                    if self.feasible(boss.graphics.x, u.layer) and not self.order_changes(u, boss.graphics.x):
+                        u.graphics.x = boss.graphics.x
+                    elif self.feasible(u.graphics.x, boss.layer) and not self.order_changes(boss, u.graphics.x):
+                        boss.graphics.x = u.graphics.x
+                      
+                        
+                else:
+                    # First dummy node after real.
+                    # Align u to t.
+                    boss = t
+                    if self.feasible(boss.graphics.x, u.layer) and not self.order_changes(u, boss.graphics.x):
+                        u.graphics.x = boss.graphics.x
+                    # MAYBE WE SHOULD REMOVE THIS ELSE! 
+                    elif self.feasible(u.graphics.x, boss.layer) and not self.order_changes(boss, u.graphics.x):
+                        boss.graphics.x = u.graphics.x
+        # ###################################################################################            
         # Middle to Bottom
         for layer in xrange(b,d+1):
             v_nodes = [v for v in self.g.layers[layer] if v.virtual ]
@@ -248,12 +319,12 @@ class FastAndSimple:
                     continue
             
                 if v.virtual:
-                    if self.feasible(v.graphics.x, u.layer):
+                    if self.feasible(v.graphics.x, u.layer) and not self.order_changes(u, v.graphics.x):
                         u.graphics.x = v.graphics.x
                         
-                    elif self.feasible(u.graphics.x, v.layer):
+                    elif self.feasible(u.graphics.x, v.layer) and not self.order_changes(v, u.graphics.x):
                         v.graphics.x = u.graphics.x
-                    
+                
             # From left to right
             
             for u in v_nodes[0:middle+1]:
@@ -262,9 +333,9 @@ class FastAndSimple:
                     continue
             
                 if v.virtual:
-                    if self.feasible(v.graphics.x, u.layer):
+                    if self.feasible(v.graphics.x, u.layer) and not self.order_changes(u, v.graphics.x):
                         u.graphics.x = v.graphics.x     
-                    elif self.feasible(u.graphics.x, v.layer):
+                    elif self.feasible(u.graphics.x, v.layer) and not self.order_changes(v, u.graphics.x):
                         v.graphics.x = u.graphics.x
        
                         
