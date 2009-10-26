@@ -370,7 +370,8 @@ class Graph:
     def find_virtual_vertices(self, color='#FF8000'):
         """Determines the virtual vertices. Sets boolean "virtual" attribute for node,
         adds the node to virtual_nodes or real_nodes lists of the graph."""
-
+        self.virtual_nodes = []
+        self.real_nodes = []
         for node in self.nodes:
             if node.graphics.fill == color: # in (color, '#FF8C00'):
                 node.virtual = True
