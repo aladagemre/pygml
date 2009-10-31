@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
+"""GML Parser and Graph Data Structure Utilities"""
 
-format_value = lambda value: '"%s"'%value if isinstance(value, str) else value
+format_value = lambda value: '"%s"' % value if isinstance(value, str) else value
 def print_list(l):
     """Prints the contents of a list"""
     print "{",
@@ -13,12 +15,16 @@ def print_dict(d):
         print_list(d[key])
 
 class Graphics:
+    """graphics attribute storage"""
     pass
 class LabelGraphics:
+    """LabelGraphics attribute storage"""
     pass
 class Line:
+    """Line attribute storage"""
     pass
 class Point:
+    """Point attribute storage"""
     pass
 
 class BaseClass:
@@ -151,6 +157,7 @@ class Graph:
         
         if filename:
             self.read_gml(filename)
+            #gp = GMLParser(filename, self)
 
         self.find_vertical_layers()
         self.find_virtual_vertices()
@@ -193,7 +200,7 @@ class Graph:
         for line in f:
             line = line.strip("\n").strip(" ").strip("\r").strip("\t")
             parts = line.split(" ")
-
+            #print parts
             # HEADER PARSING
             if parts[0] == "graph" and parts[1] == "[":
                 # Starting a new graph
@@ -332,12 +339,12 @@ class Graph:
 
     # Preprocessing methods
     def find_vertical_layers(self):
-        """Determines the vertical layers by dividing y coordinate to 100.
-        Then it sorts each layer according to the x coordinate and
-        Assigns the position attribute to each node."""
+        """Determines the vertical layers by sorting the rounded y
+        values and assigning the index number as the layer number.
+        Alternatively, layers can be found by y/100 if y's are 100x."""
         y_values = set([])
         for node in self.nodes:
-            y_values.add(node.graphics.y)
+            y_values.add(round(node.graphics.y,-2))
             """
             node.layer = int(round(node.graphics.y / 100))
             if not self.layers.get(node.layer):
@@ -345,8 +352,9 @@ class Graph:
             self.layers[node.layer].append(node)"""
         y_values = list(y_values)
         y_values.sort()
+        print y_values
         for node in self.nodes:
-            node.layer = y_values.index(node.graphics.y)
+            node.layer = y_values.index(round(node.graphics.y,-2))
             if not self.layers.get(node.layer):
                 self.layers[node.layer] = []
             self.layers[node.layer].append(node)
