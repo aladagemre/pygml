@@ -1,11 +1,12 @@
-from pygml import *
+# -*- coding: utf-8 -*-
+from pygml import Graph
 from math import ceil, floor
 import sys
-import cProfile
+#import cProfile
 
 class FastAndSimple:
-    
-    def __init__(self, input_file, output_file, minimum_distance, vstart, hstart, layersorpositions='layers'):
+    """Implementation of the paper "Fast and Simple Horizontal Coordinate Assignment" by Ulrik Brandes and Boris Köpf."""
+    def __init__(self, input_file, minimum_distance, vstart, hstart, layersorpositions='layers'):
         self.sink = {}
         self.shift = {}
         self.x = {}
@@ -21,16 +22,18 @@ class FastAndSimple:
         if not (vstart and hstart):
             return
         
-           
+        # Uncomment the two lines below if you want to detect type 2 crossings.
         #if self.detect_type2():
-        #print "Because of the type 2 crossings, there might be problems."
+            #print "Because of the type 2 crossings, there might be problems."
             
         print "Preprocessing..."
         self.preprocessing()
 
         self.decide_alignment(vstart, hstart) # DOES ALIGNMENT AND COMPACTION
         
+        # Uncomment the line below if you want to perform sorting on each individual candidate.        
         #self.node_sort_heuristic()
+        
         # Assign the computed coordinates
         for v in self.x:
             v.graphics.x = float(self.x[v])
@@ -40,8 +43,40 @@ class FastAndSimple:
         self.weighted_y_coordinates(100)
         #self.adjustments()
         self.debug()
+        
+        # Uncomment the line below if you want to straighten the edges in each individual candidate.
         #self.straighten_bends()
-          
+        
+    def color_blocks(self):
+        """Paints the blocks with different colors."""
+        colors = ("#FF0000", "#0363FF", "#FFF826", "#BA0BFF", "#FFA42D", "#16FF54", "#934446", "#FF9595", "#8860FF")
+        color_index = 0
+        for v in self.g.nodes:
+            if self.root[v] == v:
+                if self.align[v] == v: continue
+                w = v
+                start = True
+                while v!=w or start:
+                    start = False
+                    w.graphics.fill = colors[color_index]
+                    w = self.align[w]
+            color_index = (color_index + 1) % 9
+            
+    def color_classes(self):
+        """Paints the classes with different colors."""
+        colors = ("#FF0000", "#0363FF", "#FFF826", "#BA0BFF", "#FFA42D", "#16FF54", "#934446", "#FF9595", "#8860FF")
+        color_index = 0
+        sinks = set([])
+        for v in self.g.nodes:
+            u = self.sink[v]
+            sinks.add(u)
+        sinks = list(sinks)
+        for sink in sinks:
+            for v in self.g.nodes:
+                if self.sink[v] == sink:
+                    v.graphics.fill = colors[color_index]
+            color_index = (color_index + 1) % 9
+        
     def correct_triple_edge(self):
         """Corrects sloping inner segment of 3 segmented edges."""
         print "Correcting triple edges..."
@@ -54,35 +89,38 @@ class FastAndSimple:
 
             lower_real = v.lower_neighbors()[0]
             if lower_real.virtual: continue
-            print "Found a triple edge"
+            #print "Found a triple edge"
             if u.graphics.x == v.graphics.x: continue
-            print "that needs to be corrected."
+            #print "that needs to be corrected."
 
             if upper_real.graphics.x + lower_real.graphics.x > u.graphics.x + v.graphics.x:
                 # Means that real nodes are on the right of the dummies.
                 # So we should shift the dummy on the left to right.
-                print "Reals are righter."
+                #print "Reals are on the right."
                 if u.graphics.x < v.graphics.x:
-                    print "U is on the left of v"
+                    #print "U is on the left of v"
                     # If u is on the left of v,
                     if self.feasible(v.graphics.x, u.layer):
-                        print "It is feasible to put it right."
+                        #print "It is feasible to put it right."
                         # If no other node exists there,
                         u.graphics.x = v.graphics.x
     def feasible(self, x, layer):
+        """Returns if any node exists on the given x coordinate and layer."""
         get_x = lambda a: a.graphics.x
         if x in ( get_x(v) for v in self.g.layers[layer] ):
-            print  [v.graphics.x for v in self.g.layers[layer] ]
             return False
         return True
 
     def paint_type1(self):
+        """Paints the edges that are marked by preprocessing step with red"""
         # Mark type 1 crossing edges with red.
         for edge in self.g.edges:
             if edge.marked:
                 edge.graphics.fill = "#FF0000"
         
     def decide_alignment(self, vstart, hstart):
+        """Decides which methods shall be used according to
+        the direction parameters."""
         if vstart == "up":
             if hstart == "left":
                 self.vertical_alignment_up_left()
@@ -99,6 +137,8 @@ class FastAndSimple:
                 self.horizontal_compaction_down_right()
         
     def detect_type2(self):
+        """Detects type 2 crossings."""
+        print "Searching for type 2 crossings..."""
         detected = False
         for layer in self.g.layers:
             for u in self.g.layers[layer]:
@@ -115,6 +155,8 @@ class FastAndSimple:
         return detected
             
     def weighted_y_coordinates(self, base_height=100.0):
+        """Assigns weighted y coordinates to the nodes according to
+        their cumulative edge weights."""
         
         total_sum = 0.0
         layer_sums = {}
@@ -130,21 +172,19 @@ class FastAndSimple:
                         
             layer_sums[layer] = layer_sum
             total_sum += layer_sum
-
-
-        
+            
         last_y = 0
         for layer in self.g.layers:
             layer_sums[layer]/=total_sum
             if layer > 0:
-                    last_y += base_height*1.5 + base_height * len(self.g.layers)* layer_sums[layer-1]
+                last_y += base_height*1.5 + base_height * len(self.g.layers)* layer_sums[layer-1]
             for node in self.g.layers[layer]:                
-                    node.graphics.y = last_y
+                node.graphics.y = last_y
             
     def post_adjustments(self):
         """Some post adjustments after balancing. (terrible)"""
         # Shifts the overlapping nodes by half of their widths.
-        print "Post ad"
+        print "Post adjustments..."
         
         layer_overlaps = {0: 1}
         tour = 0
@@ -185,6 +225,7 @@ class FastAndSimple:
                                     v.graphics.x = prev_x + self.minimum_distance/2
                             layer_overlaps[layer] = 1
     def order_changes(self, node, target_x):
+        """Checks if the order changed when the node is moved to the target_x."""
         if target_x > node.graphics.x:
             # If we are moving the node to the right,
             if not node.succ: return False
@@ -235,11 +276,9 @@ class FastAndSimple:
         
         l = len(self.g.layers)
         if l%2 == 0:
-            b = l/2 - 1
-            c = b + 1
+            b = int(l/2) - 1
         else:
             b = int(floor(l/2))
-            c = b
             
         a = 0
         d = l-1
@@ -443,9 +482,9 @@ class FastAndSimple:
                 for u in self.g.layers[layer]:
                     v = u.succ
                     if v!=None and abs(u.graphics.x - v.graphics.x) < (u.graphics.w + v.graphics.w)/2:
-                            u.graphics.x -= u.graphics.w/2
-                            v.graphics.x += v.graphics.w/2
-                            layer_overlaps[layer] = 1
+                        u.graphics.x -= u.graphics.w/2
+                        v.graphics.x += v.graphics.w/2
+                        layer_overlaps[layer] = 1
         
     
     def debug(self):
@@ -454,20 +493,16 @@ class FastAndSimple:
         """
         print "Checking for overlaps..."
         # Print the nodes that are overlapping
-        #print "Checking overlapping nodes."
         count = 0
         for layer in self.g.layers:
-            #print "Layer %d" % layer
-            #print_list(self.g.layers[layer])
             for u in self.g.layers[layer]:    
                 for v in self.g.layers[layer]:
                     if u!=v and u.graphics.x == v.graphics.x and u.graphics.y == v.graphics.y:
-                        #print "%s (%0.0f, %0.0f) , %s (%0.0f, %0.0f)" % (u.id, u.graphics.x, u.graphics.y, v.id, v.graphics.x, v.graphics.y)
+                        print "%s (%0.0f, %0.0f) , %s (%0.0f, %0.0f)" % (u.id, u.graphics.x, u.graphics.y, v.id, v.graphics.x, v.graphics.y)
                         count+=1
         if count:
             print "%d overlaps exist." % count
-        #if count > 10:
-            #self.g.write_gml("/home/emre/Desktop/o/overlapping%d.gml" % count)
+        
     def preprocessing(self):
         """Marks the edges with type 1 crossing."""
         h = len(self.g.layers)
@@ -488,6 +523,7 @@ class FastAndSimple:
                     k0 = k1
     
     def vertical_alignment_up_left(self):
+        """Aligns the nodes to their roots (constructing blocks) - ALG2 for upper left"""
         print "Vertical Alignment Up left..."
         self.root = {}
         self.align = {}
@@ -496,7 +532,6 @@ class FastAndSimple:
             self.align[node] = node
         
         for layer in range(len(self.g.layers)):
-            #print "Layer %d" % layer
             r = -1
             for v in self.g.layers[layer]:
                 neighbors = v.upper_neighbors()
@@ -513,6 +548,7 @@ class FastAndSimple:
                                 r = neighbors[m].position
                 
     def vertical_alignment_up_right(self):
+        """Aligns the nodes to their roots (constructing blocks) - ALG2 for upper right"""
         print "Vertical Alignment Up Right..."
         self.root = {}
         self.align = {}
@@ -538,6 +574,7 @@ class FastAndSimple:
                                 r = neighbors[m].position
                                 
     def vertical_alignment_down_right(self):
+        """Aligns the nodes to their roots (constructing blocks) - ALG2 for lower right"""
         print "Vertical Alignment Down Right..."
         self.root = {}
         self.align = {}
@@ -564,6 +601,7 @@ class FastAndSimple:
                                 
                                 
     def vertical_alignment_down_left(self):
+        """Aligns the nodes to their roots (constructing blocks) - ALG2 for lower left"""
         print "Vertical Alignment Down left..."
         self.root = {}
         self.align = {}
@@ -589,6 +627,7 @@ class FastAndSimple:
                                 r = neighbors[m].position
 
     def place_block_left(self, v):
+        """Places the block of the given node into classes. (ALG 3) for left."""
         if not self.x.get(v):
             self.x[v] = 0
             w = v
@@ -597,7 +636,9 @@ class FastAndSimple:
                 start = False
                 if w.position > 0:
                     u = self.root[w.pred]
+                    
                     self.place_block_left(u)
+                    
                     if self.sink[v] == v:
                         self.sink[v] = self.sink[u]
                     if self.sink[v] != self.sink[u]:      
@@ -607,6 +648,7 @@ class FastAndSimple:
                 w = self.align[w]
                 
     def place_block_right(self, v):
+        """Places the block of the given node into classes. (ALG 3) for right."""
         if not self.x.get(v):
             self.x[v] = 0
             w = v
@@ -628,6 +670,7 @@ class FastAndSimple:
     
     
     def horizontal_compaction_up_left(self):
+        """Final X-coordinate assignment phase (ALG3) for upper left."""
         print "Horizontal Compaction up left..."
         for v in self.g.nodes:
             self.sink[v] = v
@@ -638,49 +681,20 @@ class FastAndSimple:
             for v in self.g.layers[layer]:
                 if self.root[v] == v:
                     self.place_block_left(v)
-                
+        
         # absolute coordinates
         #for v in self.g.nodes:
+        
         for layer in self.g.layers:
             for v in self.g.layers[layer]:
-                self.x[v] = self.x[self.root[v]]
+                self.x[v] = self.x[self.root[v]]        
+                
                 if v==self.root[v] and self.shift[self.sink[v]] < float("infinity"):
                     self.x[v] = self.x[v] + self.shift[self.sink[v]]
-        
-    def node_sort_heuristic(self):
-        for layer in self.g.layers:
-            #xcoords = [self.x[node] for node in self.g.layers[layer]]
-            #n = xcoords[0]
-            this_layer = self.g.layers[layer]
-            n = this_layer[0]
-            finished = False
-            while not finished:
-                if n.succ and self.x[n] >= self.x[n.succ]:
-                    self.x[n] = self.x[n.succ] - self.minimum_distance
-                    n = this_layer[0]
-                    continue
-                if n.succ:
-                    n = n.succ
-                else:
-                    finished = True
-    def node_sort_combined_heuristic(self):
-        for layer in self.g.layers:
-            #xcoords = [self.x[node] for node in self.g.layers[layer]]
-            #n = xcoords[0]
-            this_layer = self.g.layers[layer]
-            n = this_layer[0]
-            finished = False
-            while not finished:
-                if n.succ and n.graphics.x >= n.succ.graphics.x:
-                    n.graphics.x = n.graphics.x - self.minimum_distance
-                    n = this_layer[0]
-                    continue
-                if n.succ:
-                    n = n.succ
-                else:
-                    finished = True
+                
 
     def horizontal_compaction_down_left(self):
+        """Final X-coordinate assignment phase (ALG3) for lower left."""
         print "Horizontal Compaction down left..."
         for v in self.g.nodes:
             self.sink[v] = v
@@ -702,6 +716,7 @@ class FastAndSimple:
                     self.x[v] = self.x[v] + self.shift[self.sink[v]]    
             
     def horizontal_compaction_up_right(self):
+        """Final X-coordinate assignment phase (ALG3) for upper right."""
         print "Horizontal Compaction up right..."
         for v in self.g.nodes:
             self.sink[v] = v
@@ -722,6 +737,7 @@ class FastAndSimple:
                     self.x[v] = self.x[v] - self.shift[self.sink[v]]
                     
     def horizontal_compaction_down_right(self):
+        """Final X-coordinate assignment phase (ALG3) for lower right."""
         print "Horizontal Compaction down right..."
         for v in self.g.nodes:
             self.sink[v] = v
@@ -741,7 +757,41 @@ class FastAndSimple:
                 if v==self.root[v] and self.shift[self.sink[v]] < float("infinity"):
                     self.x[v] = self.x[v] - self.shift[self.sink[v]]            
     
+    def node_sort_heuristic(self):
+        """Sorts the resulting one-way layout nodes for the case any overlap occurs."""
+        for layer in self.g.layers:
+            #xcoords = [self.x[node] for node in self.g.layers[layer]]
+            this_layer = self.g.layers[layer]
+            n = this_layer[0]
+            finished = False
+            while not finished:
+                if n.succ and self.x[n] >= self.x[n.succ]:
+                    self.x[n] = self.x[n.succ] - self.minimum_distance
+                    n = this_layer[0]
+                    continue
+                if n.succ:
+                    n = n.succ
+                else:
+                    finished = True
+                    
+    def node_sort_combined_heuristic(self):
+        """Sorts the resulting combined layout nodes for the case any overlap occurs."""
+        for layer in self.g.layers:
+            this_layer = self.g.layers[layer]
+            n = this_layer[0]
+            finished = False
+            while not finished:
+                if n.succ and n.graphics.x >= n.succ.graphics.x:
+                    n.graphics.x = n.graphics.x - self.minimum_distance
+                    n = this_layer[0]
+                    continue
+                if n.succ:
+                    n = n.succ
+                else:
+                    finished = True
+                    
     def write_positions(self):
+        """Writes the positions of each node to a txt file for LEDA to process it."""
         f = open("positions.txt", "w")
         f.write("%d\n" % len(self.g.nodes))
         for layer in self.g.layers:
@@ -751,6 +801,7 @@ class FastAndSimple:
                 
                 
     def write_layers(self):
+        """Writes the layer number of each node to a txt file for LEDA to process it."""
         f = open("layers.txt", "w")
         l = len(self.g.nodes)
         f.write("%d\n" % l)
@@ -758,6 +809,7 @@ class FastAndSimple:
         f.close()
 
     def write_txt(self):
+        """Decides whether to write layers or positions file according to the command line argument."""
         if self.layersorpositions == "layers":
             self.write_layers()
         elif self.layersorpositions == "positions":
@@ -780,49 +832,38 @@ class Aligner:
         min_width = float("infinity")
         for graph in graphs:
             w = graph.get_width()
-            #print "Width of %s : %f" % (names[graphs.index(graph)], w)
             if  w < min_width:
                 min_width = w
                 reference_graph = graph
-        #print "Minimum width :", names[graphs.index(reference_graph)], min_width
         self.reference_direction = names[graphs.index(reference_graph)]
         (ul, ur, dl, dr) = graphs
         
         min_ref = reference_graph.min_x()        
         max_ref = reference_graph.max_x()
-        #print "min_ref", min_ref
-        #print "max_ref", max_ref
+
 
         # Shift left
         min_ul = ul.min_x()
         min_dl = dl.min_x()
-        #print "min_ul = ",min_ul
-        #print "min_dl = ",min_dl
     
         difference = min_ul - min_ref
-        #print "difference = ",difference
+        
         for node in ul.nodes:
             if reference_graph != ul:
                 node.graphics.x -= difference
             x_ul[node.id] = node.graphics.x
             
-            
-    
         difference = min_dl - min_ref
-        #print "min_dl - min_ref = %d - %d = %d" % (min_dl, min_ref, difference)
+        
         for node in dl.nodes:
             if reference_graph != dl:
-                #if node.id == 10: print "Before: ", node.graphics.x
                 node.graphics.x -= difference
-                #if node.id == 10: print "After: ", node.graphics.x
             x_dl[node.id] = node.graphics.x
         # Shift right
         
         max_ur = ur.max_x()
         max_dr = dr.max_x()
-        #print "max_ur = ", max_ur
-        #print "max_dr = ", max_dr
-    
+        
         difference = max_ur - max_ref
         for node in ur.nodes:
             if reference_graph != ur:        
@@ -839,43 +880,40 @@ class Aligner:
         # Average of median
         for node_id in x_ul.keys(): # Not particularly x_ul. As ids are all the same.
             x_list = [ x_ul[node_id], x_ur[node_id], x_dl[node_id], x_dr[node_id] ]
-            #if node_id == 10:
-                #print x_list            
             x_list.sort()
             
             average = (x_list[1] + x_list[2])/2
             reference_graph.get_node_by_id(node_id).graphics.x = average
-            #if node_id == 10:
-                #print "10 - ", average
-        
         
         self.result = reference_graph
         
     def get_result(self):
+        """Returns the reference graph"""
         return self.result            
 
 # -----------------------------------------
 
 
 def main():
+    """Main program, handles arguments and starts the FaSCA algorithm accordingly"""
     # COMBINED
     if sys.argv[4] == "combined":
         print "Up Left"
-        ul = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "up", "left", sys.argv[6])
+        ul = FastAndSimple(sys.argv[1], sys.argv[3], "up", "left", sys.argv[6])
         print
         print "Up Right"
-        ur = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "up", "right", sys.argv[6])
+        ur = FastAndSimple(sys.argv[1], sys.argv[3], "up", "right", sys.argv[6])
         print
         print "Down Left"
-        dl = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "down", "left", sys.argv[6])
+        dl = FastAndSimple(sys.argv[1], sys.argv[3], "down", "left", sys.argv[6])
         print
         print "Down Right"
-        dr = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], "down", "right", sys.argv[6])
+        dr = FastAndSimple(sys.argv[1], sys.argv[3], "down", "right", sys.argv[6])
         
         
         aligner = Aligner((ul.g, ur.g, dl.g, dr.g))
         result = aligner.get_result()
-        fs = FastAndSimple(result, sys.argv[2], sys.argv[3], None, None, sys.argv[6])
+        fs = FastAndSimple(result, sys.argv[3], None, None, sys.argv[6])
         
         fs.node_sort_combined_heuristic()
         fs.center_nodes()
@@ -889,10 +927,11 @@ def main():
         fs.write_txt()
     else:
         # SINGLE WAY
-        fs = FastAndSimple(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
-        
-        fs.node_sort_combined_heuristic()        
-        fs.straighten_bends()        
+        fs = FastAndSimple(sys.argv[1], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+        #fs.color_blocks()
+        #fs.color_classes()
+        #fs.node_sort_combined_heuristic()        
+        #fs.straighten_bends()        
         fs.hide_dummy_nodes()
         #fs.post_adjustments()
         fs.g.write_gml(sys.argv[2])
