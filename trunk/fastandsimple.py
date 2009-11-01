@@ -182,7 +182,7 @@ class FastAndSimple:
                 node.graphics.y = last_y
             
     def post_adjustments(self):
-        """Some post adjustments after balancing. (terrible)"""
+        """Some post adjustments after balancing."""
         # Shifts the overlapping nodes by half of their widths.
         print "Post adjustments..."
         

@@ -147,6 +147,7 @@ class Node(BaseClass):
 class Graph:
     """Essential data structure and methods for graphs."""
     def __init__(self, filename=None):
+        """If filename given, reads from that gml file."""
         self.nodes = []
         self.edges = []
         self.virtual_nodes = []
@@ -445,8 +446,11 @@ class Graph:
     def is_crossing(self, edge1, edge2):
         """Checks if two edges provided are crossing"""
         return (edge1.u < edge2.u and edge2.v < edge1.v) or (edge2.u < edge1.u and edge1.v < edge2.v)
+    
     def layer_num_elements(self, i):
+        """Returns the number of elements in the given layer."""
         return len(self.layers[i])
+    
     def is_end_incident(self, node):
         """Checks if the node is on the last point of the long edge.
         i.e. has incoming edge from a virtual node but itself is real."""
