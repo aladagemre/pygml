@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """GML Parser and Graph Data Structure Utilities"""
 
+from copy import copy
+
 format_value = lambda value: '"%s"' % value if isinstance(value, str) else value
+
 def print_list(l):
     """Prints the contents of a list"""
     print "{",
@@ -14,6 +17,8 @@ def print_dict(d):
         print "%s: " % key,
         print_list(d[key])
 
+class EdgeAnchor:
+    """edgeAnchor attribute storage (for yfiles outputs)"""
 class Graphics:
     """graphics attribute storage"""
     pass
@@ -32,14 +37,24 @@ class BaseClass:
     def print_subsection(self, name, fields):
         """Prints the subsection of Node/Edge."""
         output = ""
+        if "Line" in fields: print fields
         try:			
 
             output += "\t\t%s [\n" % name
             for field in fields:
                 if field != "Line":
                     output += "\t\t\t%s %s\n" % (field, format_value(fields[field]))
-
-            if fields.get("Line"): output += self.print_line(fields["Line"].__dict__)
+                else:
+                    print "Line"
+                    # If we're dealing with Line,
+                    output += "\t\t\tLine [\n"
+                    for point in fields["Line"]:
+                        output += "\t\t\t\tpoint [\n"
+                        output += "\t\t\t\t\tx %0.2f\n" % point.x
+                        output += "\t\t\t\t\ty %0.2f\n" % point.y
+                        output += "\t\t\t\t]\n"
+                    output += "\t\t\t]\n"    
+            #if fields.get("Line"): output += self.print_line(fields["Line"].__dict__)
 
             output += "\t\t]\n"
         except:
@@ -144,6 +159,15 @@ class Node(BaseClass):
         """Returns the position of a node in the format (layer, index)"""
         return (self.layer, self.position)
 
+    def neighbor_in_layer(self, l):
+        assert self.virtual
+        if l < self.layer:
+            return self.upper_neighbors()[0]
+        elif l > self.layer:
+            return self.lower_neighbors()[0]
+        else:
+            print "Oops! No way out of virtual node?"
+            return None
 class Graph:
     """Essential data structure and methods for graphs."""
     def __init__(self, filename=None):
@@ -157,9 +181,11 @@ class Graph:
         self.layers = {}
         
         if filename:
-            self.read_gml(filename)
+            #self.read_gml(filename)
             #gp = GMLParser(filename, self)
-
+            pass
+        
+    def prepare(self):
         self.find_vertical_layers()
         self.find_virtual_vertices()
         self.setup_edges()
@@ -186,7 +212,9 @@ class Graph:
 
     def read_gml(self, filename):
         """Reads from the GML file with the filename specified. Data is injected
-        to the graph object."""
+        to the graph object.
+        
+        NOT USED ANYMORE. NOW USING C-based GML READER."""
         f = open(filename)
         in_graph = False
         in_node = False
@@ -339,6 +367,26 @@ class Graph:
 
 
     # Preprocessing methods
+    def check_overlap(self):
+        """
+        Some debugging stuff
+        """
+        print "Checking for overlaps..."
+        # Print the nodes that are overlapping
+        count = 0
+        for layer in self.layers:
+            for u in self.layers[layer]:    
+                for v in self.layers[layer]:
+                    if u!=v and u.graphics.x == v.graphics.x and u.graphics.y == v.graphics.y:
+                        # and u.virtual != v.virtual for bundling check
+                        print "%s (%0.0f, %0.0f) , %s (%0.0f, %0.0f)" % (u.id, u.graphics.x, u.graphics.y, v.id, v.graphics.x, v.graphics.y)
+                        count+=1
+        if count:
+            print "%d overlaps exist." % count
+    def correct_y_coordinates(self):
+        for node in self.nodes:
+            node.graphics.y = node.layer * 100.0
+            
     def find_vertical_layers(self):
         """Determines the vertical layers by sorting the rounded y
         values and assigning the index number as the layer number.
@@ -353,7 +401,7 @@ class Graph:
             self.layers[node.layer].append(node)"""
         y_values = list(y_values)
         y_values.sort()
-        print y_values
+        #print y_values
         for node in self.nodes:
             node.layer = y_values.index(round(node.graphics.y,-2))
             if not self.layers.get(node.layer):
@@ -382,7 +430,7 @@ class Graph:
         self.virtual_nodes = []
         self.real_nodes = []
         for node in self.nodes:
-            if node.graphics.fill == color: # in (color, '#FF8C00'):
+            if node.graphics.fill in (color, '#FF8C00'):
                 node.virtual = True
                 self.virtual_nodes.append(node)
             else:
@@ -505,4 +553,83 @@ class Graph:
     def get_width(self):
         """Returns the width of the graph."""
         return self.max_x() - self.min_x()
+    def add_edge(self, e):
+        self.edges.append(e)
+        
+    def delete_edge(self, e):
+        # Delete from upper neighbors' outgoing dicts.
+        #print "Deleting edge", e.__unicode__()
+        if e.v in e.u.outgoing_dict:
+            del e.u.outgoing_dict[e.v]
+            
+            # Delete from the edge lists
+            e.u.outgoing_edges.remove(e)
+            e.v.incoming_edges.remove(e)
+            
+            # Delete itself.
+            self.edges.remove(e)
+            del e
+        
+    def delete_node(self, v):
+        # Delete from node lists.
+        #print "Deleting node", v.id
+        if v.virtual:
+            self.virtual_nodes.remove(v)
+        else:
+            self.real_nodes.remove(v)
+        
+        self.nodes.remove(v)
+        
+        # Delete from node dictionary
+        del self.node_dict[v.id]
+        
+        # Delete from layer list.
+        self.layers[v.layer].remove(v)
+        
+        
+        
+        # Delete edges incoming
+        #print "Incoming edges..."
+        #print_list(v.incoming_edges)
+        for e in v.incoming_edges[:]:
+            self.delete_edge(e)
+            
+        # Delete edges outgoing.
+        #print "Outgoing edges:", 
+        #print_list(v.outgoing_edges)
+        for e in v.outgoing_edges[:]:
+            if e in v.outgoing_edges:
+                self.delete_edge(e)
+        #       print_list(v.outgoing_edges)
+        
+        # Delete itself.
+        del v
+        
+    def remove_dummy_nodes(self):
+        for v in self.real_nodes:
+            source = v.id
+            virtual_edges = filter(lambda x: x.v.virtual, v.outgoing_edges)
+            
+            for e in virtual_edges:
+                ec = copy(e)
+                ec.graphics.Line = []                     # Setup the line of the edge.
+                n = ec.v                         # n is the target of the initial edge.
+                while n.virtual:
+                    p = Point()                 # Create a point with the position of the virtual node.
+                    p.x = n.graphics.x
+                    p.y = n.graphics.y
+                    ec.graphics.Line.append(p)            # Add the point to the first edge.
+                    next_edge = n.outgoing_edges[0]   # Go down to the following node.
+                    n = next_edge.v
+                    self.delete_node(next_edge.u)
+                    self.delete_edge(next_edge)
+                    
+                # Now we reached a real node. This is the target.
+                ec.v = n
+                ec.target = n.id
+                
+                self.add_edge(ec)
+                
+                self.delete_edge(e)
+                
     

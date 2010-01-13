@@ -388,7 +388,7 @@ graph [
   node [
     id 19
     parameter "0"
-      labelAnchor "c"
+    labelAnchor "c"
     graphics [
       x -200.0
       y 900.0
@@ -708,7 +708,7 @@ graph [
   node [
     id 35
     parameter "0"
-      labelAnchor "c"
+    labelAnchor "c"
     graphics [
       x 250.0
       y 200.0
