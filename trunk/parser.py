@@ -5,15 +5,27 @@
 
 """
 from gml_parser import *
-from pygml import Graph, Graphics, Edge, Node,  LabelGraphics, Line, Point, BaseClass, EdgeAnchor
+from pygml import BaseClass
+from pygml import Edge
+from pygml import EdgeAnchor
+from pygml import Graph
+from pygml import Graphics
+from pygml import LabelGraphics
+from pygml import Line
+from pygml import Node
+from pygml import Point
 
 
 class GMLParser:
     def __init__(self, filename, graph):
         stat = GML_stat()
         stat.key_list = None
-        
-        file = fopen(filename, "r")
+        try:
+            file = fopen(filename, "r")
+        except:
+            print "File %s does not exist." % filename
+            import sys
+            sys.exit(-1)
         GML_init()
 
         list = GML_parser(file, stat, 0)
@@ -29,7 +41,7 @@ class GMLParser:
     def parse(self, list, level):
         tmp = list
         
-        class_dict = { 'graph': Graph, 'graphics': Graphics, 'LabelGraphics': LabelGraphics, 'Line': Line, 'point': Point , 'edgeAnchor': EdgeAnchor}
+        class_dict = {'graph': Graph, 'graphics': Graphics, 'LabelGraphics': LabelGraphics, 'Line': Line, 'point': Point, 'edgeAnchor': EdgeAnchor}
         def get_value(o):
             if o.kind == GML_INT:
                 return o.value.integer
@@ -77,15 +89,15 @@ class GMLParser:
                     # e.g. graphics [
                     old_obj = self.obj
                     if tmp.key == "Line":
-						self.obj = []
+                        self.obj = []
                     else:
-						self.obj = class_dict[tmp.key]()
+                        self.obj = class_dict[tmp.key]()
 						
                     self.parse(tmp.value.list, level + 1)
                     if tmp.key == "point":
-						old_obj.append(self.obj)
+                        old_obj.append(self.obj)
                     else:
-						old_obj.__dict__[tmp.key] = self.obj
+                        old_obj.__dict__[tmp.key] = self.obj
                     self.obj = old_obj
             
 

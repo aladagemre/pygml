@@ -47,6 +47,7 @@ class FastAndSimple:
         self.weighted_y_coordinates(100)
         #self.adjustments()
         self.debug()
+        self.paint_type1()
        
         # Uncomment the line below if you want to straighten the edges in each individual candidate.
         #self.straighten_bends()
