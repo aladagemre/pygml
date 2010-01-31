@@ -927,10 +927,10 @@ def main():
         fs.node_sort_combined_heuristic()
         fs.center_nodes()
         fs.straighten_bends()
-        fs.hide_dummy_nodes()
+        #fs.hide_dummy_nodes()
         #fs.correct_triple_edge()     # No need for now
         #fs.weighted_y_coordinates()  # LEDA does this.
-        #fs.post_adjustments()
+        fs.post_adjustments()
         fs.debug()
         fs.g.write_gml(sys.argv[2])
         fs.write_txt()

@@ -20,12 +20,14 @@ class GMLParser:
     def __init__(self, filename, graph):
         stat = GML_stat()
         stat.key_list = None
-        try:
-            file = fopen(filename, "r")
-        except:
+        
+        import os
+        if not os.path.exists(filename):
             print "File %s does not exist." % filename
-            import sys
-            sys.exit(-1)
+            raise IOError
+
+        
+        file = fopen(filename, "r")
         GML_init()
 
         list = GML_parser(file, stat, 0)
