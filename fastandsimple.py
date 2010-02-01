@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from pygml import Graph
-from parser import GMLParser
+#from parser import GMLParser
 from math import ceil, floor
 import sys
 #import cProfile
@@ -20,7 +20,8 @@ class FastAndSimple:
         else:
             #self.g = Graph(input_file)            
             self.g = Graph()
-            gp = GMLParser(input_file, self.g)
+            #gp = GMLParser(input_file, self.g)
+            self.g.read_gml(input_file)
             self.g.prepare()
 
         if not (vstart and hstart):

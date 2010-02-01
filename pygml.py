@@ -286,8 +286,8 @@ class Graph:
             elif parts[0] == "Line" and parts[1] == "[":
                 in_line = True
 
-                line = Line()
-                e.graphics.__dict__["Line"] = line
+                #line = Line()
+                e.graphics.__dict__["Line"] = []
 
             elif parts[0] == "point" and parts[1] == "[":
                 in_point = True
@@ -295,9 +295,9 @@ class Graph:
                 point = Point()
                 # Create an initial point and put it into the newly created list.
                 # We will access the last point by index -1.
-                if not e.graphics.Line.__dict__.get("points"):
-                    e.graphics.Line.__dict__["points"] = []
-                e.graphics.Line.points.append(point)
+                #if not e.graphics.Line.__dict__.get("points"):
+                #e.graphics.Line.__dict__["points"] = []
+                e.graphics.Line.append(point)
 
 
 
@@ -341,7 +341,7 @@ class Graph:
                     # Set the attributes
 
                     if in_point:
-                        e.graphics.Line.points[-1].__dict__[parts[0]] = parts[1]
+                        e.graphics.Line[-1].__dict__[parts[0]] = parts[1]
 
                     elif in_line:
                         e.graphics.Line.__dict__[parts[0]] = parts[1]
@@ -484,10 +484,10 @@ class Graph:
         else:
             return self.get_edge(v,u)
         
-    def get_edge_by_id(self, id):
-        """Returns the edge with the given id."""
+    def get_edge_by_ids(self, source, target):
+        """Returns the edge with the given source and target ids.."""
         for edge in self.edges:
-            if edge.id == id:
+            if edge.u.id == source and edge.v.id == target:
                 return edge
         return None
 
