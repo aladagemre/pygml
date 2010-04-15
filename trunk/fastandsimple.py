@@ -48,7 +48,7 @@ class FastAndSimple:
         self.weighted_y_coordinates(100)
         #self.adjustments()
         self.debug()
-        self.paint_type1()
+        #self.paint_type1()
        
         # Uncomment the line below if you want to straighten the edges in each individual candidate.
         #self.straighten_bends()
@@ -521,6 +521,7 @@ class FastAndSimple:
                 if l1 == self.g.layer_num_elements(i+1) or self.g.is_end_incident(self.g.get_node(i+1, l1)): #incident means target v(i+1, l1) should be real and source is virtual?
                     k1 = self.g.layer_num_elements(i)
                     if self.g.is_end_incident(self.g.get_node(i+1, l1)):
+                        #print self.g.get_node(i+1, l1).id
                         k1 = self.g.get_node(i+1, l1).upper_neighbors()[0].position
                     while l < l1:
                        

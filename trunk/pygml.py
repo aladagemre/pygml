@@ -2,9 +2,18 @@
 """GML Parser and Graph Data Structure Utilities"""
 
 from copy import copy
+import math
 
-format_value = lambda value: '"%s"' % value if isinstance(value, str) else value
+#format_value = lambda value: '"%s"' % value if isinstance(value, str) "%.2f" % value elif isinstance(value, float) else value
 
+def format_value(value):
+    if isinstance(value, str):
+        return '"%s"' % value
+    elif isinstance(value, float):
+        return "%.2f" % value
+    else:
+        return value
+    
 def print_list(l):
     """Prints the contents of a list"""
     print "{",
@@ -30,8 +39,18 @@ class Line:
     pass
 class Point:
     """Point attribute storage"""
-    pass
+    def __init__(self, x=None, y=None):
+        self.x = x
+        self.y = y
 
+    def distance_to(self, other):
+        """Returns the euclidean distance to another point."""
+        return math.sqrt( (other.x - self.x)**2 + (other.y - self.y)**2  )
+    
+    def __unicode__(self):
+        return "(%.2f, %.2f)" % (self.x, self.y)
+    def __repr__(self):
+        return self.__unicode__()
 class BaseClass:
     """Base class for Node and Edge. Includes some printing methods."""
     def print_subsection(self, name, fields):
@@ -97,6 +116,7 @@ class BaseClass:
 
 class Edge(BaseClass):
     """Essential data structure and methods for edges."""
+    __slots__ = ('source','target','u','v','graphics')
     def __unicode__(self):
         return "(%s, %s)" % (self.source, self.target)
 
@@ -113,17 +133,84 @@ class Edge(BaseClass):
         output += self.print_footer()
         return output
 
+    def setup(self, source_node, target_node):
+        """Sets u and v nodes and connects edges."""
+        assert isinstance(source_node, Node), "This is not a node!"
+        assert isinstance(target_node, Node), "This is not a node!"
+        self.u = source_node    
+        self.v = target_node
+        self.u.connect_edge(self)        
+
+
     def is_short(self):
         """Checks if the edge is short (1 segment)."""
         return (self.u.layer - self.v.layer == 1)
 
+    def get_length(self):
+        """Returns the length of the direct edge from u to v."""
+        return math.sqrt((self.u.x - self.v.x)**2 + (self.u.y - self.v.y)**2)
+    
+    def get_start_point(self):
+        """Returns the source node's Point object containing its coordinates."""
+        return Point(self.u.graphics.x, self.u.graphics.y)
+    
+    def get_end_point(self):
+        """Returns the target node's Point object containing its coordinates."""
+        return Point(self.v.graphics.x, self.v.graphics.y)
+    
+    def get_weight(self):
+        return self.graphics.w
+    
 class Node(BaseClass):
     """Essential data structure and methods for nodes."""
     def __init__(self):
         self.incoming_edges = []
         self.outgoing_edges = []
         self.outgoing_dict = {}
+    
+    def add_link_to(self, target):
+        """Adds an edge between the node and target."""
+        edge = Edge()
+        # Set directions
+        edge.u = self
+        edge.v = target
+        self.connect_edge(edge)
+        
+    def add_link_from(self, source):
+        """Adds an edge between the source and the node."""
+        edge = Edge()
+        edge.u = source
+        edge.v = self
+        self.connect_edge(edge)
+        
+    def connect_edge(self, edge):
+        """Connects the given edge to the node."""
+        assert isinstance(edge, Edge) , "This is not an edge!"
+        # If we are the source
+        if edge.u == self:
+            target = edge.v
+            # Save into data structures.
+            self.outgoing_edges.append(edge)
+            self.outgoing_dict[target] = edge
+            
+            # Save into target's incoming_edges structure.
+            target.incoming_edges.append(edge)
+        
+        # If we are the target
+        elif edge.v == self:
+            source = edge.u
 
+            source.outgoing_edges.append(edge)
+            source.outgoing_dict[self] = edge
+            
+            self.incoming_edges.append(edge)
+        else:
+            raise Exception("Unrelated edge: %s to %s" % (edge.u.id, edge.v.id))    
+    @property
+    def real(self):
+        """Tells if this node is real."""
+        return not self.virtual
+    
     def __unicode__(self):
         #fields = filter(lambda x: isinstance(self.__dict__[x], str) or isinstance(self.__dict__[x], int), self.__dict__)
         #return "[" + "/".join(map(str, map(self.__dict__.get, fields))) + "]"
@@ -168,6 +255,15 @@ class Node(BaseClass):
         else:
             print "Oops! No way out of virtual node?"
             return None
+    @property
+    def x(self):
+        """Returns the x coordinate of the node."""
+        return self.graphics.x
+    @property
+    def y(self):
+        """Returns the y coordinate of the node."""
+        return self.graphics.y
+    
 class Graph:
     """Essential data structure and methods for graphs."""
     def __init__(self, filename=None):
@@ -186,6 +282,7 @@ class Graph:
             pass
         
     def prepare(self):
+        """Finds vertical layers, virtual vertices and setups edges."""
         self.find_vertical_layers()
         self.find_virtual_vertices()
         self.setup_edges()
@@ -443,15 +540,7 @@ class Graph:
         of the corresponding nodes."""
         
         for edge in self.edges:
-            edge.u = self.nodes[edge.source]	
-            edge.v = self.nodes[edge.target]
-
-            edge.u.outgoing_edges.append(edge)
-            edge.v.incoming_edges.append(edge)
-            
-            
-            for e in edge.u.outgoing_edges:
-                edge.u.outgoing_dict[e.v] = e
+            edge.setup(self.nodes[edge.source], self.nodes[edge.target])
             
         for node in self.nodes:
             node.incoming_edges.sort(lambda e1,e2: cmp(float(e1.u.graphics.x), int(e2.u.graphics.x)))
@@ -499,6 +588,30 @@ class Graph:
         """Returns the number of elements in the given layer."""
         return len(self.layers[i])
     
+    def get_last_dummies(self, real_node):
+        """Returns the last dummy nodes in the long segments below given real_node."""
+        assert not real_node.virtual    # real_node should be real!
+        
+        last_dummies = []
+        
+        for edge in real_node.outgoing_edges:
+            
+            segment = edge.v
+            if segment.real:
+                # If this is a short edge, do not consider it.
+                continue
+            
+            # Find the next node below our first virtual node.
+            next_node = segment.outgoing_edges[0].v
+            while next_node.virtual:
+                segment = segment.outgoing_edges[0].v
+                next_node = segment.outgoing_edges[0].v
+            
+            # Now segment shows the last dummy node.
+            last_dummies.append(segment)
+        
+        return last_dummies
+        
     def is_end_incident(self, node):
         """Checks if the node is on the last point of the long edge.
         i.e. has incoming edge from a virtual node but itself is real."""
@@ -510,12 +623,14 @@ class Graph:
         if node.virtual:
             if len(node.incoming_edges) > 1:
                 print "len(inc_edge) = %d!!!" % len(node.incoming_edges)
+                print node.id
             
             e = node.incoming_edges[0]
             
             return e.u.virtual
         else:
             return False
+    
 
     def is_start_incident(self, node):
         """Checks if the node is on the starting point of the long edge.
@@ -553,6 +668,32 @@ class Graph:
     def get_width(self):
         """Returns the width of the graph."""
         return self.max_x() - self.min_x()
+    
+    def min_y(self):
+        """Returns the minimum y value among the nodes of the graph."""
+        min_y = float("infinity")
+        for node in self.nodes:
+            y = node.graphics.y
+            if y < min_y:
+                min_y = y
+        return min_y
+                
+    def max_y(self):
+        """Returns the maximum y value among the nodes of the graph."""
+        max_y = float("-infinity")
+        
+        for node in self.nodes:
+            y = node.graphics.y
+            if y > max_y:
+                max_y = y
+                
+        return max_y
+                                
+            
+    def get_height(self):
+        """Returns the height of the graph."""
+        return self.max_y() - self.min_y()
+    
     def add_edge(self, e):
         self.edges.append(e)
         
