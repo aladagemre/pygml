@@ -2,7 +2,7 @@
 Fast k level layout
 '''
 
-from parser import GMLParser
+
 from pygml import Graph, Node, print_list
 from math import ceil, floor
 from heapq import heappush, heappop
@@ -24,7 +24,8 @@ class FastKLevel(object):
             sys.exit(-1)
         
         self.g = Graph()
-        gp = GMLParser(input_file, self.g)
+        #gp = GMLParser(input_file, self.g)
+        self.g.read_gml(input_file)
         self.g.prepare()
         
         self.output_file = output_file
@@ -205,7 +206,7 @@ class FastKLevel(object):
                     self.place_left(v)
             self.adjust_left_class(i)
 #        print self.xm
-
+	
     def compute_pos_right(self):
         self.compute_right_classes()
         class_ids = list(set(self.c.values()))
@@ -227,6 +228,10 @@ class FastKLevel(object):
                         self.c[vp] = cp
                 else:
                     cp = self.c[v]
+                    
+            print l+1, cp+1
+        for node in sorted(self.c.keys()):
+			print "%d : Class%d" % (node.id, self.c[node] + 1)
                     
     def compute_right_classes(self):
         for l in range(len(self.g.layers)):
